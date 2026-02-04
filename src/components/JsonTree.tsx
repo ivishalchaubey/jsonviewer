@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useMemo } from "react";
+import { useState, memo } from "react";
 
 export type JSONValue =
   | string
@@ -28,6 +28,54 @@ const isObject = (value: JSONValue): value is JSONObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isArray = (value: JSONValue): value is JSONArray => Array.isArray(value);
+
+// Collect all matching paths in the tree
+export function collectMatches(
+  value: JSONValue,
+  filter: string,
+  rootLabel: string = "JSON",
+  currentPath: string = "",
+): string[] {
+  if (!filter.trim()) return [];
+
+  const matches: string[] = [];
+  const searchLower = filter.toLowerCase();
+
+  // Helper to check if a value matches
+  const valueMatches = (val: JSONValue, label: string): boolean => {
+    const labelMatch = label.toLowerCase().includes(searchLower);
+    if (!val || typeof val !== "object") {
+      const valStr = String(val).toLowerCase();
+      return labelMatch || valStr.includes(searchLower);
+    }
+    return labelMatch;
+  };
+
+  // Check current node
+  if (isObject(value)) {
+    Object.entries(value).forEach(([key, child]) => {
+      const childPath = currentPath
+        ? `${currentPath}.${key}`
+        : `${rootLabel}.${key}`;
+      if (valueMatches(child, key)) {
+        matches.push(childPath);
+      }
+      // Recursively check children
+      matches.push(...collectMatches(child, filter, rootLabel, childPath));
+    });
+  } else if (isArray(value)) {
+    (value as JSONArray).forEach((child, index) => {
+      const childPath = `${currentPath}[${index}]`;
+      if (valueMatches(child, String(index))) {
+        matches.push(childPath);
+      }
+      // Recursively check children
+      matches.push(...collectMatches(child, filter, rootLabel, childPath));
+    });
+  }
+
+  return matches;
+}
 
 const PrimitiveValue = ({
   value,
@@ -58,14 +106,6 @@ const JsonNode = memo(function JsonNode({
   filter,
 }: NodeProps) {
   const isExpandable = isObject(value) || isArray(value);
-
-  // Auto-expand if child matches filter
-  // if (!filter) return false;
-  // const f = filter.toLowerCase();
-  // if (label.toLowerCase().includes(f)) return true;
-  // if (!isExpandable) return String(value).toLowerCase().includes(f);
-  // return JSON.stringify(value).toLowerCase().includes(f);
-
   const [open, setOpen] = useState(true);
 
   const toggle = () => {
@@ -84,7 +124,7 @@ const JsonNode = memo(function JsonNode({
       className="font-sans text-[11px] leading-tight select-none"
     >
       <div
-        className={`flex items-center gap-1 cursor-pointer py-[1px] whitespace-nowrap transition-colors ${
+        className={`flex items-center gap-1 cursor-pointer py-px whitespace-nowrap transition-colors ${
           isSelected ? "bg-[#cee6ff]" : "hover:bg-[#f2f6fa]"
         }`}
         onClick={() => {

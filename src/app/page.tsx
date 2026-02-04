@@ -1,7 +1,21 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { JsonTree, JSONValue } from "@/components/JsonTree";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useTransition,
+  useDeferredValue,
+} from "react";
+import {
+  JsonTree,
+  JSONValue,
+  JSONObject,
+  collectMatches,
+} from "@/components/JsonTree";
+import { LoadingSplash } from "@/components/LoadingSplash";
 
 export default function Home() {
   const [inputData, setInputData] = useState("");
@@ -9,7 +23,16 @@ export default function Home() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<JSONValue | null>(null);
   const [search, setSearch] = useState("");
-  const [treeFilter, setTreeFilter] = useState("");
+  const [searchMatches, setSearchMatches] = useState<number[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+  const [viewerMatches, setViewerMatches] = useState<string[]>([]);
+  const [viewerMatchIndex, setViewerMatchIndex] = useState(-1);
+  const [, startTransition] = useTransition();
+
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("Loading JSON data...");
 
   // Modals Visibility
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -34,15 +57,18 @@ export default function Home() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Deferred value for better performance with large data
+  const deferredInputData = useDeferredValue(inputData);
+
   // Derived state
   const parsed = useMemo(() => {
-    if (!inputData.trim()) return null;
+    if (!deferredInputData.trim()) return null;
     try {
-      return JSON.parse(inputData) as JSONValue;
+      return JSON.parse(deferredInputData) as JSONValue;
     } catch {
       return null;
     }
-  }, [inputData]);
+  }, [deferredInputData]);
 
   const error = useMemo(() => {
     if (!inputData.trim()) return null;
@@ -53,6 +79,15 @@ export default function Home() {
       return err instanceof Error ? err.message : "Invalid JSON";
     }
   }, [inputData]);
+
+  // Sync selectedValue when switching to viewer tab or when inputData changes
+  useEffect(() => {
+    if (activeTab === "viewer" && parsed) {
+      // Reset selection when data changes
+      setSelectedPath("JSON");
+      setSelectedValue(parsed);
+    }
+  }, [activeTab, parsed]);
 
   const formatJson = useCallback(() => {
     try {
@@ -79,45 +114,196 @@ export default function Home() {
     setInputData("");
     setSelectedValue(null);
     setSelectedPath(null);
+    setSearch("");
+    setSearchMatches([]);
+    setCurrentMatchIndex(-1);
+    setViewerMatches([]);
+    setViewerMatchIndex(-1);
   }, []);
 
   const handleSearch = useCallback(() => {
-    setTreeFilter(search.trim());
-    if (activeTab === "text") {
-      // Optional: scroll textarea to match? For now just ensure tree is ready.
+    const searchTerm = search.trim();
+
+    if (activeTab === "text" && textareaRef.current && searchTerm) {
+      // For text tab, find all matches
+      const text = inputData.toLowerCase();
+      const query = searchTerm.toLowerCase();
+      const matches: number[] = [];
+      let pos = text.indexOf(query);
+
+      while (pos !== -1) {
+        matches.push(pos);
+        pos = text.indexOf(query, pos + 1);
+      }
+
+      setSearchMatches(matches);
+      if (matches.length > 0) {
+        setCurrentMatchIndex(0);
+        // Highlight first match
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(
+          matches[0],
+          matches[0] + searchTerm.length,
+        );
+        textareaRef.current.scrollTop =
+          textareaRef.current.scrollHeight * (matches[0] / inputData.length);
+      } else {
+        setCurrentMatchIndex(-1);
+      }
+    } else if (activeTab === "viewer" && parsed && searchTerm) {
+      // For viewer tab, collect all matching paths
+      const matches = collectMatches(parsed, searchTerm, "JSON");
+      setViewerMatches(matches);
+      if (matches.length > 0) {
+        setViewerMatchIndex(0);
+        setSelectedPath(matches[0]);
+      } else {
+        setViewerMatchIndex(-1);
+      }
     }
-  }, [search, activeTab]);
+  }, [search, activeTab, inputData, parsed]);
+
+  const handleNext = useCallback(() => {
+    if (activeTab === "text") {
+      if (searchMatches.length === 0 || !textareaRef.current) return;
+
+      const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
+      setCurrentMatchIndex(nextIndex);
+
+      const pos = searchMatches[nextIndex];
+      const searchTerm = search.trim();
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(pos, pos + searchTerm.length);
+      textareaRef.current.scrollTop =
+        textareaRef.current.scrollHeight * (pos / inputData.length);
+    } else if (activeTab === "viewer") {
+      if (viewerMatches.length === 0) return;
+
+      const nextIndex = (viewerMatchIndex + 1) % viewerMatches.length;
+      setViewerMatchIndex(nextIndex);
+      setSelectedPath(viewerMatches[nextIndex]);
+    }
+  }, [
+    activeTab,
+    searchMatches,
+    currentMatchIndex,
+    search,
+    inputData.length,
+    viewerMatches,
+    viewerMatchIndex,
+  ]);
+
+  const handlePrevious = useCallback(() => {
+    if (activeTab === "text") {
+      if (searchMatches.length === 0 || !textareaRef.current) return;
+
+      const prevIndex =
+        currentMatchIndex <= 0
+          ? searchMatches.length - 1
+          : currentMatchIndex - 1;
+      setCurrentMatchIndex(prevIndex);
+
+      const pos = searchMatches[prevIndex];
+      const searchTerm = search.trim();
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(pos, pos + searchTerm.length);
+      textareaRef.current.scrollTop =
+        textareaRef.current.scrollHeight * (pos / inputData.length);
+    } else if (activeTab === "viewer") {
+      if (viewerMatches.length === 0) return;
+
+      const prevIndex =
+        viewerMatchIndex <= 0 ? viewerMatches.length - 1 : viewerMatchIndex - 1;
+      setViewerMatchIndex(prevIndex);
+      setSelectedPath(viewerMatches[prevIndex]);
+    }
+  }, [
+    activeTab,
+    searchMatches,
+    currentMatchIndex,
+    search,
+    inputData.length,
+    viewerMatches,
+    viewerMatchIndex,
+  ]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setIsLoading(true);
+    setLoadingProgress(0);
+    setLoadingMessage(`Loading ${file.name}...`);
+
     const reader = new FileReader();
+
+    reader.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = (event.loaded / event.total) * 100;
+        setLoadingProgress(progress);
+      }
+    };
+
     reader.onload = (event) => {
       const content = event.target?.result as string;
-      setInputData(content);
-      setIsLoadModalOpen(false);
-      setActiveTab("viewer");
+
+      // Use transition for non-blocking update
+      startTransition(() => {
+        setInputData(content);
+        setIsLoadModalOpen(false);
+        setActiveTab("viewer");
+        setLoadingProgress(100);
+
+        // Small delay to show 100% completion
+        setTimeout(() => {
+          setIsLoading(false);
+          setLoadingProgress(0);
+        }, 300);
+      });
     };
+
+    reader.onerror = () => {
+      setIsLoading(false);
+      alert("Error reading file");
+    };
+
     reader.readAsText(file);
   };
 
   const handleUrlLoad = async () => {
     if (!loadUrl.trim()) return;
     setIsFetchingUrl(true);
+    setIsLoading(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Fetching data from URL...");
+
     try {
       const res = await fetch(loadUrl);
       if (!res.ok) throw new Error("Failed to fetch");
+
+      setLoadingProgress(50);
       const data = await res.json();
-      setInputData(JSON.stringify(data, null, 2));
-      setIsLoadModalOpen(false);
-      setActiveTab("viewer");
+      setLoadingProgress(75);
+
+      startTransition(() => {
+        setInputData(JSON.stringify(data, null, 2));
+        setIsLoadModalOpen(false);
+        setActiveTab("viewer");
+        setLoadingProgress(100);
+
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsFetchingUrl(false);
+          setLoadingProgress(0);
+        }, 300);
+      });
     } catch (err) {
+      setIsLoading(false);
+      setIsFetchingUrl(false);
       alert(
         "Error loading URL: " +
           (err instanceof Error ? err.message : "Unknown error"),
       );
-    } finally {
-      setIsFetchingUrl(false);
     }
   };
 
@@ -186,6 +372,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen font-sans text-[11px] selection:bg-[#cee6ff]">
+      {/* Loading Splash Screen */}
+      {isLoading && (
+        <LoadingSplash progress={loadingProgress} message={loadingMessage} />
+      )}
+
       {/* Top Ad Space */}
       <div className="h-16 shrink-0 bg-transparent flex items-center justify-center">
         <div className="w-full h-full bg-linear-to-r from-purple-100 via-blue-50 to-orange-50 opacity-50" />
@@ -221,9 +412,6 @@ export default function Home() {
         <div className="flex-1 flex flex-col mx-2 border border-gray-300 shadow-sm overflow-hidden">
           {/* Action Toolbar */}
           <div className="flex items-center h-8 border-b border-gray-300 bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] px-2 divide-x divide-gray-300">
-            <button key="paste" onClick={() => {}} className="toolbar-btn">
-              Paste
-            </button>
             <button
               key="copy"
               onClick={copyToClipboard}
@@ -269,11 +457,11 @@ export default function Home() {
                   >
                     {parsed ? (
                       <JsonTree
-                        key={treeFilter || "default"}
+                        key={search || "default"}
                         value={parsed}
                         rootLabel="JSON"
                         selectedPath={selectedPath ?? undefined}
-                        filter={treeFilter}
+                        filter={search}
                         onSelect={(path, _label, value) => {
                           setSelectedPath(path);
                           setSelectedValue(value);
@@ -365,7 +553,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Bottom Search Bar - Now outside the tab conditional to be persistent */}
+            {/* Bottom Search Bar */}
             <div className="h-8 border-t border-gray-300 bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] flex items-center px-2 gap-2 shrink-0">
               <span className="font-semibold text-gray-700">Search:</span>
               <input
@@ -381,14 +569,38 @@ export default function Home() {
               >
                 GO!
               </button>
+              {activeTab === "text" && searchMatches.length > 0 && (
+                <span className="text-[10px] text-gray-600">
+                  {currentMatchIndex + 1} of {searchMatches.length}
+                </span>
+              )}
+              {activeTab === "viewer" && viewerMatches.length > 0 && (
+                <span className="text-[10px] text-gray-600">
+                  {viewerMatchIndex + 1} of {viewerMatches.length}
+                </span>
+              )}
               <div className="flex items-center gap-4 ml-4">
-                <button className="flex items-center gap-1 text-[10px] text-gray-700 group">
+                <button
+                  onClick={handleNext}
+                  disabled={
+                    (activeTab === "text" && searchMatches.length === 0) ||
+                    (activeTab === "viewer" && viewerMatches.length === 0)
+                  }
+                  className="flex items-center gap-1 text-[10px] text-gray-700 group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <span className="text-green-600 font-bold group-hover:scale-110 transition-transform">
                     ↑
                   </span>{" "}
                   Next
                 </button>
-                <button className="flex items-center gap-1 text-[10px] text-gray-700 group">
+                <button
+                  onClick={handlePrevious}
+                  disabled={
+                    (activeTab === "text" && searchMatches.length === 0) ||
+                    (activeTab === "viewer" && viewerMatches.length === 0)
+                  }
+                  className="flex items-center gap-1 text-[10px] text-gray-700 group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <span className="text-green-600 font-bold group-hover:scale-110 transition-transform">
                     ↓
                   </span>{" "}
@@ -405,7 +617,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 h-6 bg-[#f0f0f0] border-t border-gray-300 flex items-center justify-center gap-1 z-[60]">
+      <div className="fixed bottom-0 left-0 right-0 h-6 bg-[#f0f0f0] border-t border-gray-300 flex items-center justify-center gap-1 z-60">
         <span className="text-[11px] text-gray-800 flex items-center gap-1">
           Made with <span className="text-red-600">❤</span> for the community.
           This tool is free forever. Happy JSON Viewing! 🚀
@@ -471,11 +683,6 @@ export default function Home() {
                   >
                     json.org
                   </a>
-                </p>
-                <p className="font-bold text-red-600">Slow loading speed</p>
-                <p>
-                  Several users reported slow loading speed in Chrome, but I
-                  couldn&apos;t figure out why.
                 </p>
                 <p>
                   Security concerns: In fact, the site doesn&apos;t even have a
@@ -589,5 +796,3 @@ export default function Home() {
     </div>
   );
 }
-
-type JSONObject = { [key: string]: JSONValue };
