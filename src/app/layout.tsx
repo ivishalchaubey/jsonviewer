@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "JSON Viewer – Fast Online Formatter",
   description:
     "Modern, fast JSON viewer and formatter with tree view, file import, and copy/download support.",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({
