@@ -406,19 +406,10 @@ export default function Home() {
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 h-6 bg-[#f0f0f0] border-t border-gray-300 flex items-center justify-center gap-1 z-[60]">
-        <span className="text-red-600">❤</span>
-        <span className="text-[11px] text-gray-800">
-          Support this one-nerd project,{" "}
-          <span className="font-bold">remove ads</span> and{" "}
-          <span className="font-bold">increase loading speed</span> all for $19
-          (one-time):
+        <span className="text-[11px] text-gray-800 flex items-center gap-1">
+          Made with <span className="text-red-600">❤</span> for the community.
+          This tool is free forever. Happy JSON Viewing! 🚀
         </span>
-        <a
-          href="#"
-          className="text-[11px] text-[#00a651] font-bold hover:underline"
-        >
-          Are you with me?
-        </a>
       </div>
 
       {/* About Modal */}
