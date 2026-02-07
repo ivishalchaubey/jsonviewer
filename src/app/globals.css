@@ -61,3 +61,72 @@ textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: #999;
 }
+
+/* ─── CodeMirror Editor Overrides ─────────────────────────────────── */
+
+/* Ensure the editor fills its container */
+.cm-editor {
+  height: 100% !important;
+}
+
+.cm-editor .cm-scroller {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* Smooth transitions for gutter elements */
+.cm-editor .cm-gutterElement {
+  transition: color 0.15s ease;
+}
+
+/* Lint marker animation */
+.cm-editor .cm-lint-marker-error {
+  animation: pulse-error 2s ease-in-out infinite;
+}
+
+@keyframes pulse-error {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Fold placeholder hover effect */
+.cm-editor .cm-foldPlaceholder:hover {
+  background-color: #b6e3ff;
+  border-color: #0969da;
+}
+
+/* Search panel transitions */
+.cm-editor .cm-panels {
+  transition: all 0.15s ease;
+}
+
+/* Tooltip animation */
+.cm-editor .cm-tooltip {
+  animation: tooltip-fade-in 0.15s ease;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Autocomplete list animation */
+.cm-editor .cm-tooltip-autocomplete ul {
+  animation: autocomplete-slide 0.12s ease;
+}
+
+@keyframes autocomplete-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

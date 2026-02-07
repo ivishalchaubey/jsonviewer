@@ -3,7 +3,6 @@
 import {
   useState,
   useCallback,
-  useRef,
   useEffect,
   useMemo,
   useTransition,
@@ -16,6 +15,20 @@ import {
   collectMatches,
 } from "@/components/JsonTree";
 import { LoadingSplash } from "@/components/LoadingSplash";
+import dynamic from "next/dynamic";
+
+const JsonCodeEditor = dynamic(
+  () =>
+    import("@/components/JsonCodeEditor").then((mod) => mod.JsonCodeEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">
+        Loading editor...
+      </div>
+    ),
+  }
+);
 
 export default function Home() {
   const [inputData, setInputData] = useState("");
@@ -38,9 +51,13 @@ export default function Home() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
 
-  // Modal Positions & States
-  const [aboutPos, setAboutPos] = useState({ x: 100, y: 100 });
-  const [loadPos, setLoadPos] = useState({ x: 150, y: 150 });
+  // Modal Positions & States (centered on first open)
+  const [aboutPos, setAboutPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [loadPos, setLoadPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [aboutActiveTab, setAboutActiveTab] = useState("about");
 
   // URL Load state
@@ -54,8 +71,6 @@ export default function Home() {
   // Resizer State
   const [treeWidth, setTreeWidth] = useState(1000);
   const [isResizing, setIsResizing] = useState(false);
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Deferred value for better performance with large data
   const deferredInputData = useDeferredValue(inputData);
@@ -124,8 +139,8 @@ export default function Home() {
   const handleSearch = useCallback(() => {
     const searchTerm = search.trim();
 
-    if (activeTab === "text" && textareaRef.current && searchTerm) {
-      // For text tab, find all matches
+    if (activeTab === "text" && searchTerm) {
+      // For text tab, find all matches in the text content
       const text = inputData.toLowerCase();
       const query = searchTerm.toLowerCase();
       const matches: number[] = [];
@@ -139,14 +154,6 @@ export default function Home() {
       setSearchMatches(matches);
       if (matches.length > 0) {
         setCurrentMatchIndex(0);
-        // Highlight first match
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(
-          matches[0],
-          matches[0] + searchTerm.length,
-        );
-        textareaRef.current.scrollTop =
-          textareaRef.current.scrollHeight * (matches[0] / inputData.length);
       } else {
         setCurrentMatchIndex(-1);
       }
@@ -165,17 +172,10 @@ export default function Home() {
 
   const handleNext = useCallback(() => {
     if (activeTab === "text") {
-      if (searchMatches.length === 0 || !textareaRef.current) return;
+      if (searchMatches.length === 0) return;
 
       const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
       setCurrentMatchIndex(nextIndex);
-
-      const pos = searchMatches[nextIndex];
-      const searchTerm = search.trim();
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(pos, pos + searchTerm.length);
-      textareaRef.current.scrollTop =
-        textareaRef.current.scrollHeight * (pos / inputData.length);
     } else if (activeTab === "viewer") {
       if (viewerMatches.length === 0) return;
 
@@ -187,28 +187,19 @@ export default function Home() {
     activeTab,
     searchMatches,
     currentMatchIndex,
-    search,
-    inputData.length,
     viewerMatches,
     viewerMatchIndex,
   ]);
 
   const handlePrevious = useCallback(() => {
     if (activeTab === "text") {
-      if (searchMatches.length === 0 || !textareaRef.current) return;
+      if (searchMatches.length === 0) return;
 
       const prevIndex =
         currentMatchIndex <= 0
           ? searchMatches.length - 1
           : currentMatchIndex - 1;
       setCurrentMatchIndex(prevIndex);
-
-      const pos = searchMatches[prevIndex];
-      const searchTerm = search.trim();
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(pos, pos + searchTerm.length);
-      textareaRef.current.scrollTop =
-        textareaRef.current.scrollHeight * (pos / inputData.length);
     } else if (activeTab === "viewer") {
       if (viewerMatches.length === 0) return;
 
@@ -221,8 +212,6 @@ export default function Home() {
     activeTab,
     searchMatches,
     currentMatchIndex,
-    search,
-    inputData.length,
     viewerMatches,
     viewerMatchIndex,
   ]);
@@ -364,9 +353,28 @@ export default function Home() {
     };
   }, [isResizing, activeDrag, dragOffset]);
 
+  // Center modal helper
+  const centerModal = (width: number, height: number) => ({
+    x: Math.round((window.innerWidth - width) / 2),
+    y: Math.round((window.innerHeight - height) / 2),
+  });
+
+  const openAbout = useCallback(() => {
+    if (!aboutPos) setAboutPos(centerModal(650, 500));
+    setIsAboutOpen(true);
+  }, [aboutPos]);
+
+  const openLoadModal = useCallback(() => {
+    if (!loadPos) setLoadPos(centerModal(500, 380));
+    setIsLoadModalOpen(true);
+  }, [loadPos]);
+
   const startDrag = (e: React.MouseEvent, type: "about" | "load") => {
     setActiveDrag(type);
-    const pos = type === "about" ? aboutPos : loadPos;
+    const pos =
+      type === "about"
+        ? aboutPos ?? { x: 0, y: 0 }
+        : loadPos ?? { x: 0, y: 0 };
     setDragOffset({ x: e.clientX - pos.x, y: e.clientY - pos.y });
   };
 
@@ -434,14 +442,14 @@ export default function Home() {
             </button>
             <button
               key="load"
-              onClick={() => setIsLoadModalOpen(true)}
+              onClick={openLoadModal}
               className="toolbar-btn text-nowrap"
             >
               Load JSON data
             </button>
             <div
               className="ml-auto px-4 text-blue-800 hover:underline cursor-pointer"
-              onClick={() => setIsAboutOpen(true)}
+              onClick={openAbout}
             >
               About
             </div>
@@ -535,20 +543,11 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col relative bg-white">
-                  <textarea
-                    ref={textareaRef}
+                <div className="flex-1 flex flex-col relative bg-white min-h-0">
+                  <JsonCodeEditor
                     value={inputData}
-                    onChange={(e) => setInputData(e.target.value)}
-                    placeholder="Paste your JSON here..."
-                    className="flex-1 w-full h-full p-2 outline-none resize-none font-mono text-[12px] text-gray-800 leading-normal"
-                    spellCheck={false}
+                    onChange={(val) => setInputData(val)}
                   />
-                  {error && (
-                    <div className="absolute top-2 right-2 bg-red-50 border border-red-200 text-red-600 px-3 py-1 text-[10px] shadow-sm rounded">
-                      {error}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -625,9 +624,9 @@ export default function Home() {
       </div>
 
       {/* About Modal */}
-      {isAboutOpen && (
+      {isAboutOpen && aboutPos && (
         <div
-          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[650px] overflow-hidden"
+          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[650px] overflow-hidden rounded"
           style={{ left: aboutPos.x, top: aboutPos.y }}
         >
           <div
@@ -666,41 +665,225 @@ export default function Home() {
           </div>
           <div className="p-4 max-h-[400px] overflow-auto text-[12px] leading-relaxed text-[#111]">
             {aboutActiveTab === "about" && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <p>
-                  <span className="font-bold">JSON</span>, short for{" "}
+                  <span className="font-bold">JSON</span> (
                   <span className="font-bold cursor-help border-b border-dotted border-black">
                     JavaScript Object Notation
                   </span>
-                  , is a lightweight computer data interchange format.
+                  ) is a lightweight data interchange format that is easy for
+                  humans to read and write, and easy for machines to parse and
+                  generate.
+                </p>
+                <p>
+                  JSON is built on two universal data structures:
+                </p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>
+                    <span className="font-semibold">Object</span> &mdash; An
+                    unordered collection of key/value pairs enclosed in curly
+                    braces{" "}
+                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                      {`{ }`}
+                    </code>
+                    . Keys must be strings.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Array</span> &mdash; An
+                    ordered list of values enclosed in square brackets{" "}
+                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                      {"[ ]"}
+                    </code>
+                    .
+                  </li>
+                </ul>
+                <p>
+                  Values can be:{" "}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    string
+                  </code>
+                  ,{" "}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    number
+                  </code>
+                  ,{" "}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    boolean
+                  </code>{" "}
+                  (
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    true
+                  </code>
+                  /
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    false
+                  </code>
+                  ),{" "}
+                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    null
+                  </code>
+                  , an object, or an array. These structures can be nested.
+                </p>
+                <p className="text-[11px] text-gray-600">
+                  JSON is language-independent but uses conventions familiar to
+                  programmers of the C-family of languages. It is commonly used
+                  for APIs, configuration files, and data storage.
                 </p>
                 <p>
                   Read more:{" "}
                   <a
-                    href="http://json.org"
+                    href="https://json.org"
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
                   >
                     json.org
+                  </a>{" "}
+                  |{" "}
+                  <a
+                    href="https://datatracker.ietf.org/doc/html/rfc8259"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    RFC 8259
                   </a>
-                </p>
-                <p>
-                  Security concerns: In fact, the site doesn&apos;t even have a
-                  database.
                 </p>
               </div>
             )}
             {aboutActiveTab === "example" && (
-              <div className="bg-gray-50 border border-gray-200 p-3 font-mono text-[11px] whitespace-pre">{`{"firstName": "John", "lastName": "Smith"}`}</div>
+              <div className="space-y-3">
+                <p className="text-[11px] text-gray-600">
+                  A simple JSON object:
+                </p>
+                <div className="bg-gray-50 border border-gray-200 p-3 font-mono text-[11px] whitespace-pre rounded">{`{
+  "firstName": "John",
+  "lastName": "Smith",
+  "age": 32,
+  "isActive": true
+}`}</div>
+                <p className="text-[11px] text-gray-600 mt-3">
+                  A more complex example with nested objects and arrays:
+                </p>
+                <div className="bg-gray-50 border border-gray-200 p-3 font-mono text-[11px] whitespace-pre rounded">{`{
+  "name": "John Smith",
+  "age": 32,
+  "address": {
+    "street": "21 2nd Street",
+    "city": "New York",
+    "state": "NY",
+    "zip": "10021"
+  },
+  "phoneNumbers": [
+    { "type": "home", "number": "212 555-1234" },
+    { "type": "mobile", "number": "646 555-4567" }
+  ],
+  "children": [],
+  "spouse": null
+}`}</div>
+              </div>
+            )}
+            {aboutActiveTab === "viewer" && (
+              <div className="space-y-3">
+                <p>
+                  <span className="font-bold">Online JSON Viewer</span> is a
+                  free, fast, and modern tool for viewing, editing, formatting,
+                  and validating JSON data right in your browser.
+                </p>
+                <p className="font-semibold text-[11px] uppercase text-gray-500 mt-2">
+                  Features
+                </p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>
+                    <span className="font-semibold">Tree Viewer</span> &mdash;
+                    Interactive, collapsible tree view with property inspection.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Code Editor</span> &mdash;
+                    Full-featured JSON editor with syntax highlighting, bracket
+                    matching, auto-closing, code folding, and real-time
+                    validation.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Format &amp; Minify</span>{" "}
+                    &mdash; One-click pretty-print or minify your JSON.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Validation</span> &mdash;
+                    Inline error markers with exact position and descriptive
+                    messages.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Search</span> &mdash; Search
+                    across keys and values in both tree and text views.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Load Data</span> &mdash;
+                    Upload files, fetch from URL, or use sample data.
+                  </li>
+                  <li>
+                    <span className="font-semibold">Copy</span> &mdash; Copy
+                    formatted or raw JSON to clipboard instantly.
+                  </li>
+                </ul>
+                <p className="font-semibold text-[11px] uppercase text-gray-500 mt-2">
+                  Keyboard Shortcuts
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Ctrl+Space
+                    </kbd>{" "}
+                    Autocomplete
+                  </div>
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Ctrl+F
+                    </kbd>{" "}
+                    Find &amp; Replace
+                  </div>
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Ctrl+Z
+                    </kbd>{" "}
+                    Undo
+                  </div>
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Ctrl+Shift+Z
+                    </kbd>{" "}
+                    Redo
+                  </div>
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Tab
+                    </kbd>{" "}
+                    Indent
+                  </div>
+                  <div>
+                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                      Shift+Tab
+                    </kbd>{" "}
+                    Unindent
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-2">
+                  Privacy: All processing happens locally in your browser. No
+                  data is sent to any server. This site does not have a database.
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  This tool is free and open for the community.
+                </p>
+              </div>
             )}
           </div>
         </div>
       )}
 
       {/* Load JSON Data Modal */}
-      {isLoadModalOpen && (
+      {isLoadModalOpen && loadPos && (
         <div
-          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[500px] overflow-hidden"
+          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[500px] overflow-hidden rounded"
           style={{ left: loadPos.x, top: loadPos.y }}
         >
           <div
