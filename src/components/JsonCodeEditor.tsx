@@ -233,8 +233,8 @@ function extractExistingKeys(doc: string): string[] {
   return keys;
 }
 
-// ─── Custom Theme ─────────────────────────────────────────────────────
-const futuristicHighlightStyle = HighlightStyle.define([
+// ─── Light Theme ──────────────────────────────────────────────────────
+const lightHighlightStyle = HighlightStyle.define([
   { tag: tags.propertyName, color: "#0550ae", fontWeight: "600" },
   { tag: tags.string, color: "#0a3069" },
   { tag: tags.number, color: "#0550ae" },
@@ -245,7 +245,7 @@ const futuristicHighlightStyle = HighlightStyle.define([
   { tag: tags.squareBracket, color: "#0550ae", fontWeight: "600" },
 ]);
 
-const editorTheme = EditorView.theme(
+const lightEditorTheme = EditorView.theme(
   {
     "&": {
       fontSize: "13px",
@@ -254,17 +254,9 @@ const editorTheme = EditorView.theme(
       height: "100%",
       backgroundColor: "#ffffff",
     },
-    "&.cm-focused": {
-      outline: "none",
-    },
-    ".cm-content": {
-      padding: "8px 0",
-      caretColor: "#0550ae",
-    },
-    ".cm-cursor": {
-      borderLeftColor: "#0550ae",
-      borderLeftWidth: "2px",
-    },
+    "&.cm-focused": { outline: "none" },
+    ".cm-content": { padding: "8px 0", caretColor: "#0550ae" },
+    ".cm-cursor": { borderLeftColor: "#0550ae", borderLeftWidth: "2px" },
     ".cm-gutters": {
       backgroundColor: "#f6f8fa",
       borderRight: "1px solid #d0d7de",
@@ -282,15 +274,11 @@ const editorTheme = EditorView.theme(
       color: "#24292f",
       fontWeight: "600",
     },
-    ".cm-activeLine": {
-      backgroundColor: "#f6f8fa80",
-    },
+    ".cm-activeLine": { backgroundColor: "#f6f8fa80" },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
       backgroundColor: "#add6ff80 !important",
     },
-    ".cm-selectionMatch": {
-      backgroundColor: "#e8e0ff",
-    },
+    ".cm-selectionMatch": { backgroundColor: "#e8e0ff" },
     ".cm-matchingBracket": {
       backgroundColor: "#afd7ff",
       outline: "1px solid #0969da",
@@ -310,13 +298,8 @@ const editorTheme = EditorView.theme(
       cursor: "pointer",
       transition: "color 0.15s",
     },
-    ".cm-foldGutter .cm-gutterElement:hover": {
-      color: "#0550ae",
-    },
-    ".cm-lint-marker": {
-      width: "8px !important",
-      height: "8px !important",
-    },
+    ".cm-foldGutter .cm-gutterElement:hover": { color: "#0550ae" },
+    ".cm-lint-marker": { width: "8px !important", height: "8px !important" },
     ".cm-lint-marker-error": {
       content: "none !important",
       background: "#cf222e !important",
@@ -338,9 +321,7 @@ const editorTheme = EditorView.theme(
       backgroundColor: "#ffffff",
       overflow: "hidden",
     },
-    ".cm-tooltip-lint": {
-      padding: "0",
-    },
+    ".cm-tooltip-lint": { padding: "0" },
     ".cm-diagnostic": {
       padding: "8px 12px",
       borderLeft: "none",
@@ -371,9 +352,7 @@ const editorTheme = EditorView.theme(
       backgroundColor: "#ddf4ff",
       color: "#0550ae",
     },
-    ".cm-completionLabel": {
-      fontWeight: "500",
-    },
+    ".cm-completionLabel": { fontWeight: "500" },
     ".cm-completionDetail": {
       fontStyle: "normal",
       color: "#8c959f",
@@ -384,10 +363,7 @@ const editorTheme = EditorView.theme(
       backgroundColor: "#f6f8fa",
       borderBottom: "1px solid #d0d7de",
     },
-    ".cm-search": {
-      padding: "6px 10px",
-      fontSize: "12px",
-    },
+    ".cm-search": { padding: "6px 10px", fontSize: "12px" },
     ".cm-search input": {
       border: "1px solid #d0d7de",
       borderRadius: "4px",
@@ -407,9 +383,7 @@ const editorTheme = EditorView.theme(
       backgroundColor: "#ffffff",
       cursor: "pointer",
     },
-    ".cm-search button:hover": {
-      backgroundColor: "#f3f4f6",
-    },
+    ".cm-search button:hover": { backgroundColor: "#f3f4f6" },
     ".cm-foldPlaceholder": {
       backgroundColor: "#ddf4ff",
       border: "1px solid #54aeff",
@@ -421,27 +395,197 @@ const editorTheme = EditorView.theme(
       margin: "0 2px",
       cursor: "pointer",
     },
-    ".cm-scroller": {
-      overflow: "auto",
-      fontFamily: "inherit",
-    },
-    ".cm-scroller::-webkit-scrollbar": {
-      width: "8px",
-      height: "8px",
-    },
-    ".cm-scroller::-webkit-scrollbar-track": {
-      background: "#f6f8fa",
-    },
+    ".cm-scroller": { overflow: "auto", fontFamily: "inherit" },
+    ".cm-scroller::-webkit-scrollbar": { width: "8px", height: "8px" },
+    ".cm-scroller::-webkit-scrollbar-track": { background: "#f6f8fa" },
     ".cm-scroller::-webkit-scrollbar-thumb": {
       background: "#d0d7de",
       borderRadius: "4px",
       border: "2px solid #f6f8fa",
     },
-    ".cm-scroller::-webkit-scrollbar-thumb:hover": {
-      background: "#8c959f",
-    },
+    ".cm-scroller::-webkit-scrollbar-thumb:hover": { background: "#8c959f" },
   },
   { dark: false }
+);
+
+// ─── Dark Theme ───────────────────────────────────────────────────────
+const darkHighlightStyle = HighlightStyle.define([
+  { tag: tags.propertyName, color: "#79c0ff", fontWeight: "600" },
+  { tag: tags.string, color: "#a5d6ff" },
+  { tag: tags.number, color: "#79c0ff" },
+  { tag: tags.bool, color: "#ff7b72" },
+  { tag: tags.null, color: "#d2a8ff" },
+  { tag: tags.punctuation, color: "#8b949e" },
+  { tag: tags.brace, color: "#79c0ff", fontWeight: "600" },
+  { tag: tags.squareBracket, color: "#79c0ff", fontWeight: "600" },
+]);
+
+const darkEditorTheme = EditorView.theme(
+  {
+    "&": {
+      fontSize: "13px",
+      fontFamily:
+        'var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+      height: "100%",
+      backgroundColor: "#0d1117",
+    },
+    "&.cm-focused": { outline: "none" },
+    ".cm-content": { padding: "8px 0", caretColor: "#58a6ff" },
+    ".cm-cursor": { borderLeftColor: "#58a6ff", borderLeftWidth: "2px" },
+    ".cm-gutters": {
+      backgroundColor: "#161b22",
+      borderRight: "1px solid #21262d",
+      color: "#484f58",
+      minWidth: "40px",
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+      padding: "0 8px 0 4px",
+      minWidth: "32px",
+      fontSize: "11px",
+      fontFamily: "inherit",
+    },
+    ".cm-activeLineGutter": {
+      backgroundColor: "#1c2128",
+      color: "#e6edf3",
+      fontWeight: "600",
+    },
+    ".cm-activeLine": { backgroundColor: "#161b2280" },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor: "#1a3a5c !important",
+    },
+    ".cm-selectionMatch": { backgroundColor: "#2a2050" },
+    ".cm-matchingBracket": {
+      backgroundColor: "#1a3a5c",
+      outline: "1px solid #58a6ff",
+      color: "#79c0ff !important",
+      fontWeight: "700",
+    },
+    ".cm-nonmatchingBracket": {
+      backgroundColor: "#3d1f20",
+      outline: "1px solid #f85149",
+      color: "#f85149 !important",
+    },
+    ".cm-foldGutter .cm-gutterElement": {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: "#484f58",
+      padding: "0 2px",
+      cursor: "pointer",
+      transition: "color 0.15s",
+    },
+    ".cm-foldGutter .cm-gutterElement:hover": { color: "#58a6ff" },
+    ".cm-lint-marker": { width: "8px !important", height: "8px !important" },
+    ".cm-lint-marker-error": {
+      content: "none !important",
+      background: "#f85149 !important",
+      borderRadius: "50%",
+      width: "8px !important",
+      height: "8px !important",
+      display: "inline-block",
+    },
+    ".cm-lintRange-error": {
+      backgroundImage: "none",
+      textDecoration: "wavy underline #f85149",
+      textDecorationSkipInk: "none",
+      textUnderlineOffset: "3px",
+    },
+    ".cm-tooltip": {
+      border: "1px solid #30363d",
+      borderRadius: "8px",
+      boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+      backgroundColor: "#161b22",
+      color: "#e6edf3",
+      overflow: "hidden",
+    },
+    ".cm-tooltip-lint": { padding: "0" },
+    ".cm-diagnostic": {
+      padding: "8px 12px",
+      borderLeft: "none",
+      fontSize: "12px",
+      lineHeight: "1.5",
+    },
+    ".cm-diagnostic-error": {
+      borderLeft: "3px solid #f85149",
+      backgroundColor: "#3d1f20",
+      color: "#ffa198",
+    },
+    ".cm-tooltip-autocomplete": {
+      borderRadius: "8px",
+      border: "1px solid #30363d",
+      boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+      overflow: "hidden",
+    },
+    ".cm-tooltip.cm-tooltip-autocomplete > ul": {
+      fontFamily: "inherit",
+      fontSize: "12px",
+      maxHeight: "200px",
+    },
+    ".cm-tooltip-autocomplete ul li": {
+      padding: "4px 10px !important",
+      borderBottom: "1px solid #21262d",
+    },
+    ".cm-tooltip-autocomplete ul li[aria-selected]": {
+      backgroundColor: "#1a3a5c",
+      color: "#58a6ff",
+    },
+    ".cm-completionLabel": { fontWeight: "500" },
+    ".cm-completionDetail": {
+      fontStyle: "normal",
+      color: "#6e7681",
+      fontSize: "11px",
+      marginLeft: "8px",
+    },
+    ".cm-panels": {
+      backgroundColor: "#161b22",
+      borderBottom: "1px solid #30363d",
+    },
+    ".cm-search": { padding: "6px 10px", fontSize: "12px" },
+    ".cm-search input": {
+      border: "1px solid #30363d",
+      borderRadius: "4px",
+      padding: "2px 6px",
+      fontSize: "12px",
+      outline: "none",
+      backgroundColor: "#0d1117",
+      color: "#e6edf3",
+    },
+    ".cm-search input:focus": {
+      borderColor: "#58a6ff",
+      boxShadow: "0 0 0 3px rgba(88,166,255,0.15)",
+    },
+    ".cm-search button": {
+      borderRadius: "4px",
+      padding: "2px 8px",
+      fontSize: "11px",
+      border: "1px solid #30363d",
+      backgroundColor: "#21262d",
+      color: "#e6edf3",
+      cursor: "pointer",
+    },
+    ".cm-search button:hover": { backgroundColor: "#30363d" },
+    ".cm-search label": { color: "#8b949e" },
+    ".cm-foldPlaceholder": {
+      backgroundColor: "#1a3a5c",
+      border: "1px solid #388bfd",
+      borderRadius: "4px",
+      color: "#58a6ff",
+      padding: "0 6px",
+      fontSize: "10px",
+      fontWeight: "600",
+      margin: "0 2px",
+      cursor: "pointer",
+    },
+    ".cm-scroller": { overflow: "auto", fontFamily: "inherit" },
+    ".cm-scroller::-webkit-scrollbar": { width: "8px", height: "8px" },
+    ".cm-scroller::-webkit-scrollbar-track": { background: "#0d1117" },
+    ".cm-scroller::-webkit-scrollbar-thumb": {
+      background: "#30363d",
+      borderRadius: "4px",
+      border: "2px solid #0d1117",
+    },
+    ".cm-scroller::-webkit-scrollbar-thumb:hover": { background: "#484f58" },
+  },
+  { dark: true }
 );
 
 // ─── Editor Component ─────────────────────────────────────────────────
@@ -449,6 +593,7 @@ const editorTheme = EditorView.theme(
 interface JsonCodeEditorProps {
   value: string;
   onChange: (value: string) => void;
+  isDark?: boolean;
 }
 
 interface EditorStats {
@@ -460,7 +605,7 @@ interface EditorStats {
   selection: number;
 }
 
-export function JsonCodeEditor({ value, onChange }: JsonCodeEditorProps) {
+export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [stats, setStats] = useState<EditorStats>({
     line: 1,
@@ -515,7 +660,7 @@ export function JsonCodeEditor({ value, onChange }: JsonCodeEditorProps) {
       json(),
 
       // ── Syntax highlighting ──
-      syntaxHighlighting(futuristicHighlightStyle),
+      syntaxHighlighting(isDark ? darkHighlightStyle : lightHighlightStyle),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
 
       // ── Bracket matching ──
@@ -569,9 +714,9 @@ export function JsonCodeEditor({ value, onChange }: JsonCodeEditorProps) {
       }),
 
       // ── Theme ──
-      editorTheme,
+      isDark ? darkEditorTheme : lightEditorTheme,
     ];
-  }, [errorCount]);
+  }, [errorCount, isDark]);
 
   const handleChange = useCallback(
     (val: string) => {
@@ -609,17 +754,24 @@ export function JsonCodeEditor({ value, onChange }: JsonCodeEditorProps) {
           basicSetup={false}
           height="100%"
           style={{ height: "100%" }}
+          theme={isDark ? "dark" : "light"}
         />
       </div>
 
       {/* Status Bar */}
-      <div className="h-6 shrink-0 flex items-center px-3 gap-4 bg-[#f6f8fa] border-t border-[#d0d7de] text-[11px] font-mono select-none">
-        <div className="flex items-center gap-3 text-[#57606a]">
+      <div
+        className="h-6 shrink-0 flex items-center px-3 gap-4 text-[11px] font-mono select-none"
+        style={{
+          backgroundColor: "var(--status-bar-bg)",
+          borderTop: "1px solid var(--status-bar-border)",
+        }}
+      >
+        <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
           <span>
             Ln {stats.line}, Col {stats.col}
           </span>
           {stats.selection > 0 && (
-            <span className="text-[#0550ae]">
+            <span style={{ color: "var(--accent)" }}>
               ({stats.selection} selected)
             </span>
           )}
@@ -628,25 +780,31 @@ export function JsonCodeEditor({ value, onChange }: JsonCodeEditorProps) {
         <div className="flex-1 flex justify-center">
           {value.trim() ? (
             stats.errors > 0 ? (
-              <span className="flex items-center gap-1.5 text-[#cf222e] font-medium">
-                <span className="inline-block w-2 h-2 rounded-full bg-[#cf222e] animate-pulse" />
+              <span className="flex items-center gap-1.5 font-medium" style={{ color: "var(--error)" }}>
+                <span
+                  className="inline-block w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: "var(--error)" }}
+                />
                 {stats.errors} error{stats.errors > 1 ? "s" : ""} found
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-[#1a7f37] font-medium">
-                <span className="inline-block w-2 h-2 rounded-full bg-[#1a7f37]" />
+              <span className="flex items-center gap-1.5 font-medium" style={{ color: "var(--success)" }}>
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "var(--success)" }}
+                />
                 Valid JSON
               </span>
             )
           ) : (
-            <span className="text-[#8c959f]">Ready</span>
+            <span style={{ color: "var(--text-tertiary)" }}>Ready</span>
           )}
         </div>
 
-        <div className="flex items-center gap-3 text-[#57606a]">
+        <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
           <span>{stats.lines} lines</span>
           <span>{formatSize(stats.chars)}</span>
-          <span className="text-[#8c959f]">JSON</span>
+          <span style={{ color: "var(--text-tertiary)" }}>JSON</span>
         </div>
       </div>
     </div>

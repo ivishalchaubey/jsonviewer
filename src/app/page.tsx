@@ -15,6 +15,7 @@ import {
   collectMatches,
 } from "@/components/JsonTree";
 import { LoadingSplash } from "@/components/LoadingSplash";
+import { useTheme, ThemeToggle } from "@/components/ThemeToggle";
 import dynamic from "next/dynamic";
 
 const JsonCodeEditor = dynamic(
@@ -23,7 +24,7 @@ const JsonCodeEditor = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-[12px]">
+      <div className="flex-1 flex items-center justify-center text-[12px]" style={{ color: "var(--text-tertiary)" }}>
         Loading editor...
       </div>
     ),
@@ -41,6 +42,9 @@ export default function Home() {
   const [viewerMatches, setViewerMatches] = useState<string[]>([]);
   const [viewerMatchIndex, setViewerMatchIndex] = useState(-1);
   const [, startTransition] = useTransition();
+
+  // Theme
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
@@ -379,47 +383,72 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen font-sans text-[11px] selection:bg-[#cee6ff]">
+    <div className="flex flex-col h-screen font-sans text-[11px]" style={{ color: "var(--text-primary)" }}>
       {/* Loading Splash Screen */}
       {isLoading && (
         <LoadingSplash progress={loadingProgress} message={loadingMessage} />
       )}
 
       {/* Top Ad Space */}
-      <div className="h-16 shrink-0 bg-transparent flex items-center justify-center">
-        <div className="w-full h-full bg-linear-to-r from-purple-100 via-blue-50 to-orange-50 opacity-50" />
+      <div className="h-16 shrink-0 flex items-center justify-center" style={{ backgroundColor: "var(--background)" }}>
+        <div
+          className="w-full h-full opacity-50"
+          style={{
+            background: isDark
+              ? "linear-gradient(to right, rgba(88,28,135,0.15), rgba(30,58,138,0.1), rgba(154,52,18,0.1))"
+              : "linear-gradient(to right, #f3e8ff, #eff6ff, #fff7ed)",
+          }}
+        />
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col bg-white overflow-hidden pb-4">
+      <div className="flex-1 flex flex-col overflow-hidden pb-4" style={{ backgroundColor: "var(--surface)" }}>
         {/* Navigation Tabs */}
         <div className="flex items-end h-8 px-2 gap-[2px] bg-transparent">
           <button
             onClick={() => setActiveTab("viewer")}
-            className={`h-7 px-4 text-[12px] font-medium border border-b-0 border-gray-300 rounded-t-md transition-colors ${
+            className={`h-7 px-4 text-[12px] font-medium border border-b-0 rounded-t-md transition-colors ${
               activeTab === "viewer"
-                ? "bg-white translate-y-px z-10"
-                : "bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] hover:from-[#f0f0f0]"
+                ? "translate-y-px z-10"
+                : ""
             }`}
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: activeTab === "viewer" ? "var(--surface)" : undefined,
+              background: activeTab !== "viewer" ? "var(--toolbar-bg)" : undefined,
+              color: "var(--text-primary)",
+            }}
           >
             Viewer
           </button>
           <button
             onClick={() => setActiveTab("text")}
-            className={`h-7 px-4 text-[12px] font-medium border border-b-0 border-gray-300 rounded-t-md transition-colors ${
+            className={`h-7 px-4 text-[12px] font-medium border border-b-0 rounded-t-md transition-colors ${
               activeTab === "text"
-                ? "bg-white translate-y-px z-10"
-                : "bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] hover:from-[#f0f0f0]"
+                ? "translate-y-px z-10"
+                : ""
             }`}
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: activeTab === "text" ? "var(--surface)" : undefined,
+              background: activeTab !== "text" ? "var(--toolbar-bg)" : undefined,
+              color: "var(--text-primary)",
+            }}
           >
             Text
           </button>
         </div>
 
         {/* Workspace Area */}
-        <div className="flex-1 flex flex-col mx-2 border border-gray-300 shadow-sm overflow-hidden">
+        <div className="flex-1 flex flex-col mx-2 border shadow-sm overflow-hidden" style={{ borderColor: "var(--border)" }}>
           {/* Action Toolbar */}
-          <div className="flex items-center h-8 border-b border-gray-300 bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] px-2 divide-x divide-gray-300">
+          <div
+            className="flex items-center h-8 border-b px-2 toolbar-dividers"
+            style={{
+              borderColor: "var(--border)",
+              background: "var(--toolbar-bg)",
+            }}
+          >
             <button
               key="copy"
               onClick={copyToClipboard}
@@ -447,21 +476,29 @@ export default function Home() {
             >
               Load JSON data
             </button>
-            <div
-              className="ml-auto px-4 text-blue-800 hover:underline cursor-pointer"
-              onClick={openAbout}
-            >
-              About
+            <div className="ml-auto flex items-center h-full">
+              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+              <div
+                className="px-4 hover:underline cursor-pointer"
+                style={{ color: "var(--accent)" }}
+                onClick={openAbout}
+              >
+                About
+              </div>
             </div>
           </div>
 
           <div className="flex-1 flex flex-col min-h-0 relative">
             <div className="flex-1 flex min-h-0 relative">
               {activeTab === "viewer" ? (
-                <div className="flex-1 flex min-h-0 bg-white relative">
+                <div className="flex-1 flex min-h-0 relative" style={{ backgroundColor: "var(--surface)" }}>
                   <div
-                    className="overflow-auto border-r border-[#eee] p-2 bg-white"
-                    style={{ width: treeWidth }}
+                    className="overflow-auto p-2"
+                    style={{
+                      width: treeWidth,
+                      backgroundColor: "var(--surface)",
+                      borderRight: "1px solid var(--border-light)",
+                    }}
                   >
                     {parsed ? (
                       <JsonTree
@@ -476,9 +513,9 @@ export default function Home() {
                         }}
                       />
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400">
+                      <div className="h-full flex items-center justify-center" style={{ color: "var(--text-tertiary)" }}>
                         {error ? (
-                          <span className="text-red-500 font-medium">
+                          <span className="font-medium" style={{ color: "var(--error)" }}>
                             Error: {error}
                           </span>
                         ) : (
@@ -488,18 +525,28 @@ export default function Home() {
                     )}
                   </div>
                   <div
-                    className="w-[2px] cursor-col-resize hover:bg-blue-400 transition-colors bg-gray-300 shrink-0"
+                    className="w-[2px] cursor-col-resize transition-colors shrink-0"
+                    style={{ backgroundColor: isResizing ? "var(--accent)" : "var(--border)" }}
                     onMouseDown={() => setIsResizing(true)}
                   />
-                  <div className="flex-1 flex flex-col bg-white overflow-hidden min-w-[200px]">
-                    <div className="flex h-6 bg-[#f8f9fa] border-b border-[#eee] text-[11px] font-medium select-none">
-                      <div className="flex-1 px-2 border-r border-[#eee] flex items-center gap-1 hover:bg-[#eaeaea] cursor-pointer group">
+                  <div className="flex-1 flex flex-col overflow-hidden min-w-[200px]" style={{ backgroundColor: "var(--surface)" }}>
+                    <div
+                      className="flex h-6 border-b text-[11px] font-medium select-none"
+                      style={{
+                        backgroundColor: "var(--surface-secondary)",
+                        borderColor: "var(--border-light)",
+                      }}
+                    >
+                      <div
+                        className="flex-1 px-2 border-r flex items-center gap-1 cursor-pointer group"
+                        style={{ borderColor: "var(--border-light)", color: "var(--text-primary)" }}
+                      >
                         Name{" "}
-                        <span className="text-[8px] text-gray-400 group-hover:text-gray-600">
-                          ▲
+                        <span className="text-[8px]" style={{ color: "var(--text-tertiary)" }}>
+                          &#9650;
                         </span>
                       </div>
-                      <div className="w-[150px] px-2 flex items-center">
+                      <div className="w-[150px] px-2 flex items-center" style={{ color: "var(--text-primary)" }}>
                         Value
                       </div>
                     </div>
@@ -511,12 +558,16 @@ export default function Home() {
                             ([key, val]) => (
                               <div
                                 key={key}
-                                className="flex border-b border-[#f5f5f5] hover:bg-[#f2f6fa] h-[22px] items-center text-[10px]"
+                                className="flex border-b h-[22px] items-center text-[10px] detail-row"
+                                style={{ borderColor: "var(--border-light)" }}
                               >
-                                <div className="flex-1 px-2 border-r border-[#f5f5f5] font-medium truncate">
+                                <div
+                                  className="flex-1 px-2 border-r font-medium truncate"
+                                  style={{ borderColor: "var(--border-light)", color: "var(--text-primary)" }}
+                                >
                                   {key}
                                 </div>
-                                <div className="w-[150px] px-2 text-gray-600 truncate">
+                                <div className="w-[150px] px-2 truncate" style={{ color: "var(--text-secondary)" }}>
                                   {typeof val === "object" && val !== null
                                     ? "..."
                                     : String(val)}
@@ -525,17 +576,23 @@ export default function Home() {
                             ),
                           )
                         ) : (
-                          <div className="flex bg-[#cee6ff] h-[22px] items-center text-[10px]">
-                            <div className="flex-1 px-2 border-r border-[#cee6ff] font-medium truncate">
+                          <div
+                            className="flex h-[22px] items-center text-[10px]"
+                            style={{ backgroundColor: "var(--selection)" }}
+                          >
+                            <div
+                              className="flex-1 px-2 border-r font-medium truncate"
+                              style={{ borderColor: "var(--selection)", color: "var(--text-primary)" }}
+                            >
                               Value
                             </div>
-                            <div className="w-[150px] px-2 text-gray-900 truncate font-semibold">
+                            <div className="w-[150px] px-2 truncate font-semibold" style={{ color: "var(--text-primary)" }}>
                               {String(selectedValue)}
                             </div>
                           </div>
                         )
                       ) : (
-                        <div className="p-4 text-center text-gray-300 italic">
+                        <div className="p-4 text-center italic" style={{ color: "var(--text-tertiary)" }}>
                           Select a node to view properties
                         </div>
                       )}
@@ -543,38 +600,55 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col relative bg-white min-h-0">
+                <div className="flex-1 flex flex-col relative min-h-0" style={{ backgroundColor: "var(--surface)" }}>
                   <JsonCodeEditor
                     value={inputData}
                     onChange={(val) => setInputData(val)}
+                    isDark={isDark}
                   />
                 </div>
               )}
             </div>
 
             {/* Bottom Search Bar */}
-            <div className="h-8 border-t border-gray-300 bg-linear-to-b from-[#fcfcfc] to-[#e0e4e6] flex items-center px-2 gap-2 shrink-0">
-              <span className="font-semibold text-gray-700">Search:</span>
+            <div
+              className="h-8 border-t flex items-center px-2 gap-2 shrink-0"
+              style={{
+                borderColor: "var(--border)",
+                background: "var(--toolbar-bg)",
+              }}
+            >
+              <span className="font-semibold" style={{ color: "var(--text-secondary)" }}>Search:</span>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="h-[18px] border border-gray-400 px-1 outline-none text-[10px] w-48 shadow-inner"
+                className="h-[18px] border px-1 outline-none text-[10px] w-48 shadow-inner"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-primary)",
+                }}
               />
               <button
                 onClick={handleSearch}
-                className="h-[20px] px-2 border border-gray-400 bg-white hover:bg-gray-50 active:bg-gray-100 text-[10px] font-bold"
+                className="h-[20px] px-2 border text-[10px] font-bold"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-primary)",
+                }}
               >
                 GO!
               </button>
               {activeTab === "text" && searchMatches.length > 0 && (
-                <span className="text-[10px] text-gray-600">
+                <span className="text-[10px]" style={{ color: "var(--text-secondary)" }}>
                   {currentMatchIndex + 1} of {searchMatches.length}
                 </span>
               )}
               {activeTab === "viewer" && viewerMatches.length > 0 && (
-                <span className="text-[10px] text-gray-600">
+                <span className="text-[10px]" style={{ color: "var(--text-secondary)" }}>
                   {viewerMatchIndex + 1} of {viewerMatches.length}
                 </span>
               )}
@@ -585,10 +659,11 @@ export default function Home() {
                     (activeTab === "text" && searchMatches.length === 0) ||
                     (activeTab === "viewer" && viewerMatches.length === 0)
                   }
-                  className="flex items-center gap-1 text-[10px] text-gray-700 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 text-[10px] group disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ color: "var(--text-secondary)" }}
                 >
-                  <span className="text-green-600 font-bold group-hover:scale-110 transition-transform">
-                    ↑
+                  <span className="font-bold group-hover:scale-110 transition-transform" style={{ color: "var(--success)" }}>
+                    &#8593;
                   </span>{" "}
                   Next
                 </button>
@@ -598,10 +673,11 @@ export default function Home() {
                     (activeTab === "text" && searchMatches.length === 0) ||
                     (activeTab === "viewer" && viewerMatches.length === 0)
                   }
-                  className="flex items-center gap-1 text-[10px] text-gray-700 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 text-[10px] group disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ color: "var(--text-secondary)" }}
                 >
-                  <span className="text-green-600 font-bold group-hover:scale-110 transition-transform">
-                    ↓
+                  <span className="font-bold group-hover:scale-110 transition-transform" style={{ color: "var(--success)" }}>
+                    &#8595;
                   </span>{" "}
                   Previous
                 </button>
@@ -611,64 +687,113 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="h-16 shrink-0 bg-transparent flex items-center justify-center">
-        <div className="w-full h-full bg-linear-to-r from-orange-50 via-blue-50 to-purple-100 opacity-50" />
+      <div className="h-16 shrink-0 flex items-center justify-center" style={{ backgroundColor: "var(--background)" }}>
+        <div
+          className="w-full h-full opacity-50"
+          style={{
+            background: isDark
+              ? "linear-gradient(to right, rgba(154,52,18,0.1), rgba(30,58,138,0.1), rgba(88,28,135,0.15))"
+              : "linear-gradient(to right, #fff7ed, #eff6ff, #f3e8ff)",
+          }}
+        />
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 h-6 bg-[#f0f0f0] border-t border-gray-300 flex items-center justify-center gap-1 z-60">
-        <span className="text-[11px] text-gray-800 flex items-center gap-1">
-          Made with <span className="text-red-600">❤</span> for the community.
-          This tool is free forever. Happy JSON Viewing! 🚀
+      <div
+        className="fixed bottom-0 left-0 right-0 h-6 border-t flex items-center justify-center gap-1 z-60"
+        style={{
+          backgroundColor: "var(--surface-secondary)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
+          Made with <span className="text-red-600">&#10084;</span> for the community.
+          This tool is free forever. Happy JSON Viewing! &#128640;
         </span>
       </div>
 
       {/* About Modal */}
       {isAboutOpen && aboutPos && (
         <div
-          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[650px] overflow-hidden rounded"
-          style={{ left: aboutPos.x, top: aboutPos.y }}
+          className="fixed z-100 w-[650px] overflow-hidden rounded"
+          style={{
+            left: aboutPos.x,
+            top: aboutPos.y,
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 4px 20px var(--modal-shadow)",
+          }}
         >
           <div
-            className="h-7 bg-[#f0f0f0] border-b border-gray-300 flex items-center px-2 cursor-move select-none"
+            className="h-7 border-b flex items-center px-2 cursor-move select-none"
+            style={{
+              backgroundColor: "var(--surface-secondary)",
+              borderColor: "var(--border)",
+            }}
             onMouseDown={(e) => startDrag(e, "about")}
           >
-            <span className="text-[11px] font-bold text-gray-600">
+            <span className="text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>
               Online JSON Viewer and Formatter
             </span>
             <button
-              className="ml-auto w-5 h-5 flex items-center justify-center border border-gray-400 rounded-sm bg-white hover:bg-red-50 text-[10px] text-gray-600 pb-0.5"
+              className="ml-auto w-5 h-5 flex items-center justify-center border rounded-sm text-[10px] pb-0.5"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+              }}
               onClick={() => setIsAboutOpen(false)}
             >
-              ✕
+              &#10005;
             </button>
           </div>
-          <div className="h-8 bg-[#f5f5f5] border-b border-gray-300 flex items-end px-1 gap-1">
+          <div
+            className="h-8 border-b flex items-end px-1 gap-1"
+            style={{
+              backgroundColor: "var(--surface-secondary)",
+              borderColor: "var(--border)",
+            }}
+          >
             <button
-              className={`h-6 px-3 text-[11px] font-bold border border-gray-300 border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "about" ? "bg-white translate-y-px z-10" : "bg-[#e5e5e5]"}`}
+              className={`h-6 px-3 text-[11px] font-bold border border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "about" ? "translate-y-px z-10" : ""}`}
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: aboutActiveTab === "about" ? "var(--surface)" : "var(--surface-secondary)",
+                color: aboutActiveTab === "about" ? "var(--text-primary)" : "var(--text-secondary)",
+              }}
               onClick={() => setAboutActiveTab("about")}
             >
               About JSON
             </button>
             <button
-              className={`h-6 px-3 text-[11px] border border-gray-300 border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "example" ? "bg-white translate-y-px z-10" : "bg-[#e5e5e5]"}`}
+              className={`h-6 px-3 text-[11px] border border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "example" ? "translate-y-px z-10" : ""}`}
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: aboutActiveTab === "example" ? "var(--surface)" : "var(--surface-secondary)",
+                color: aboutActiveTab === "example" ? "var(--text-primary)" : "var(--text-secondary)",
+              }}
               onClick={() => setAboutActiveTab("example")}
             >
               Example
             </button>
             <button
-              className={`h-6 px-3 text-[11px] border border-gray-300 border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "viewer" ? "bg-white translate-y-px z-10" : "bg-[#e5e5e5]"}`}
+              className={`h-6 px-3 text-[11px] border border-b-0 rounded-t-sm transition-colors ${aboutActiveTab === "viewer" ? "translate-y-px z-10" : ""}`}
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: aboutActiveTab === "viewer" ? "var(--surface)" : "var(--surface-secondary)",
+                color: aboutActiveTab === "viewer" ? "var(--text-primary)" : "var(--text-secondary)",
+              }}
               onClick={() => setAboutActiveTab("viewer")}
             >
               About Online JSON Viewer
             </button>
           </div>
-          <div className="p-4 max-h-[400px] overflow-auto text-[12px] leading-relaxed text-[#111]">
+          <div className="p-4 max-h-[400px] overflow-auto text-[12px] leading-relaxed" style={{ color: "var(--text-primary)" }}>
             {aboutActiveTab === "about" && (
               <div className="space-y-3">
                 <p>
                   <span className="font-bold">JSON</span> (
-                  <span className="font-bold cursor-help border-b border-dotted border-black">
+                  <span className="font-bold cursor-help" style={{ borderBottom: "1px dotted var(--text-primary)" }}>
                     JavaScript Object Notation
                   </span>
                   ) is a lightweight data interchange format that is easy for
@@ -683,7 +808,7 @@ export default function Home() {
                     <span className="font-semibold">Object</span> &mdash; An
                     unordered collection of key/value pairs enclosed in curly
                     braces{" "}
-                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                       {`{ }`}
                     </code>
                     . Keys must be strings.
@@ -691,7 +816,7 @@ export default function Home() {
                   <li>
                     <span className="font-semibold">Array</span> &mdash; An
                     ordered list of values enclosed in square brackets{" "}
-                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                    <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                       {"[ ]"}
                     </code>
                     .
@@ -699,32 +824,32 @@ export default function Home() {
                 </ul>
                 <p>
                   Values can be:{" "}
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     string
                   </code>
                   ,{" "}
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     number
                   </code>
                   ,{" "}
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     boolean
                   </code>{" "}
                   (
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     true
                   </code>
                   /
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     false
                   </code>
                   ),{" "}
-                  <code className="bg-gray-100 px-1 rounded text-[11px]">
+                  <code className="px-1 rounded text-[11px]" style={{ backgroundColor: "var(--surface-secondary)" }}>
                     null
                   </code>
                   , an object, or an array. These structures can be nested.
                 </p>
-                <p className="text-[11px] text-gray-600">
+                <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
                   JSON is language-independent but uses conventions familiar to
                   programmers of the C-family of languages. It is commonly used
                   for APIs, configuration files, and data storage.
@@ -735,7 +860,8 @@ export default function Home() {
                     href="https://json.org"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="hover:underline"
+                    style={{ color: "var(--accent)" }}
                   >
                     json.org
                   </a>{" "}
@@ -744,7 +870,8 @@ export default function Home() {
                     href="https://datatracker.ietf.org/doc/html/rfc8259"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="hover:underline"
+                    style={{ color: "var(--accent)" }}
                   >
                     RFC 8259
                   </a>
@@ -753,19 +880,31 @@ export default function Home() {
             )}
             {aboutActiveTab === "example" && (
               <div className="space-y-3">
-                <p className="text-[11px] text-gray-600">
+                <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
                   A simple JSON object:
                 </p>
-                <div className="bg-gray-50 border border-gray-200 p-3 font-mono text-[11px] whitespace-pre rounded">{`{
+                <div
+                  className="border p-3 font-mono text-[11px] whitespace-pre rounded"
+                  style={{
+                    backgroundColor: "var(--surface-secondary)",
+                    borderColor: "var(--border-light)",
+                  }}
+                >{`{
   "firstName": "John",
   "lastName": "Smith",
   "age": 32,
   "isActive": true
 }`}</div>
-                <p className="text-[11px] text-gray-600 mt-3">
+                <p className="text-[11px] mt-3" style={{ color: "var(--text-secondary)" }}>
                   A more complex example with nested objects and arrays:
                 </p>
-                <div className="bg-gray-50 border border-gray-200 p-3 font-mono text-[11px] whitespace-pre rounded">{`{
+                <div
+                  className="border p-3 font-mono text-[11px] whitespace-pre rounded"
+                  style={{
+                    backgroundColor: "var(--surface-secondary)",
+                    borderColor: "var(--border-light)",
+                  }}
+                >{`{
   "name": "John Smith",
   "age": 32,
   "address": {
@@ -790,7 +929,7 @@ export default function Home() {
                   free, fast, and modern tool for viewing, editing, formatting,
                   and validating JSON data right in your browser.
                 </p>
-                <p className="font-semibold text-[11px] uppercase text-gray-500 mt-2">
+                <p className="font-semibold text-[11px] uppercase mt-2" style={{ color: "var(--text-tertiary)" }}>
                   Features
                 </p>
                 <ul className="list-disc ml-5 space-y-1">
@@ -826,52 +965,52 @@ export default function Home() {
                     formatted or raw JSON to clipboard instantly.
                   </li>
                 </ul>
-                <p className="font-semibold text-[11px] uppercase text-gray-500 mt-2">
+                <p className="font-semibold text-[11px] uppercase mt-2" style={{ color: "var(--text-tertiary)" }}>
                   Keyboard Shortcuts
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Ctrl+Space
                     </kbd>{" "}
                     Autocomplete
                   </div>
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Ctrl+F
                     </kbd>{" "}
                     Find &amp; Replace
                   </div>
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Ctrl+Z
                     </kbd>{" "}
                     Undo
                   </div>
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Ctrl+Shift+Z
                     </kbd>{" "}
                     Redo
                   </div>
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Tab
                     </kbd>{" "}
                     Indent
                   </div>
                   <div>
-                    <kbd className="bg-gray-100 border border-gray-300 rounded px-1 text-[10px]">
+                    <kbd className="border rounded px-1 text-[10px]" style={{ backgroundColor: "var(--surface-secondary)", borderColor: "var(--border)" }}>
                       Shift+Tab
                     </kbd>{" "}
                     Unindent
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-2">
+                <p className="text-[11px] mt-2" style={{ color: "var(--text-tertiary)" }}>
                   Privacy: All processing happens locally in your browser. No
                   data is sent to any server. This site does not have a database.
                 </p>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
                   This tool is free and open for the community.
                 </p>
               </div>
@@ -883,38 +1022,54 @@ export default function Home() {
       {/* Load JSON Data Modal */}
       {isLoadModalOpen && loadPos && (
         <div
-          className="fixed z-100 bg-white border border-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.3)] w-[500px] overflow-hidden rounded"
-          style={{ left: loadPos.x, top: loadPos.y }}
+          className="fixed z-100 w-[500px] overflow-hidden rounded"
+          style={{
+            left: loadPos.x,
+            top: loadPos.y,
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 4px 20px var(--modal-shadow)",
+          }}
         >
           <div
-            className="h-7 bg-[#f0f0f0] border-b border-gray-300 flex items-center px-2 cursor-move select-none"
+            className="h-7 border-b flex items-center px-2 cursor-move select-none"
+            style={{
+              backgroundColor: "var(--surface-secondary)",
+              borderColor: "var(--border)",
+            }}
             onMouseDown={(e) => startDrag(e, "load")}
           >
-            <span className="text-[11px] font-bold text-gray-600">
+            <span className="text-[11px] font-bold" style={{ color: "var(--text-secondary)" }}>
               Load JSON Data
             </span>
             <button
-              className="ml-auto w-5 h-5 flex items-center justify-center border border-gray-400 rounded-sm bg-white hover:bg-red-50 text-[10px] text-gray-600 pb-0.5"
+              className="ml-auto w-5 h-5 flex items-center justify-center border rounded-sm text-[10px] pb-0.5"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+              }}
               onClick={() => setIsLoadModalOpen(false)}
             >
-              ✕
+              &#10005;
             </button>
           </div>
           <div className="p-5 space-y-6">
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-700 uppercase">
+              <label className="text-[11px] font-bold uppercase" style={{ color: "var(--text-secondary)" }}>
                 Upload JSON File
               </label>
               <input
                 type="file"
                 onChange={handleFileUpload}
                 accept=".json,application/json"
-                className="w-full text-[11px] file:mr-4 file:py-1 file:px-4 file:rounded-sm file:border file:border-gray-300 file:bg-gray-50 file:text-[11px] file:font-semibold hover:file:bg-gray-100 cursor-pointer"
+                className="w-full text-[11px] file:mr-4 file:py-1 file:px-4 file:rounded-sm file:border file:text-[11px] file:font-semibold file:cursor-pointer cursor-pointer file-input-themed"
+                style={{ color: "var(--text-primary)" }}
               />
             </div>
-            <div className="border-t border-gray-200" />
+            <div style={{ borderTop: "1px solid var(--border-light)" }} />
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-700 uppercase">
+              <label className="text-[11px] font-bold uppercase" style={{ color: "var(--text-secondary)" }}>
                 Load from URL
               </label>
               <div className="flex gap-2">
@@ -923,32 +1078,52 @@ export default function Home() {
                   value={loadUrl}
                   onChange={(e) => setLoadUrl(e.target.value)}
                   placeholder="https://api.example.com/data.json"
-                  className="flex-1 h-7 border border-gray-300 px-2 outline-none text-[11px] rounded-sm focus:border-blue-500"
+                  className="flex-1 h-7 border px-2 outline-none text-[11px] rounded-sm"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text-primary)",
+                  }}
                 />
                 <button
                   onClick={handleUrlLoad}
                   disabled={isFetchingUrl}
-                  className="h-7 px-4 bg-gray-100 border border-gray-300 rounded-sm hover:bg-gray-200 text-[11px] font-bold disabled:opacity-50"
+                  className="h-7 px-4 border rounded-sm text-[11px] font-bold disabled:opacity-50"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface-secondary)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   {isFetchingUrl ? "..." : "LOAD"}
                 </button>
               </div>
             </div>
-            <div className="border-t border-gray-200" />
+            <div style={{ borderTop: "1px solid var(--border-light)" }} />
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-gray-700 uppercase">
+              <label className="text-[11px] font-bold uppercase" style={{ color: "var(--text-secondary)" }}>
                 Load Sample Data
               </label>
               <div className="flex gap-2">
                 <button
                   onClick={() => loadSample("simple")}
-                  className="flex-1 h-7 bg-gray-100 border border-gray-300 rounded-sm hover:bg-gray-200 text-[11px]"
+                  className="flex-1 h-7 border rounded-sm text-[11px]"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface-secondary)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   Simple Sample
                 </button>
                 <button
                   onClick={() => loadSample("complex")}
-                  className="flex-1 h-7 bg-gray-100 border border-gray-300 rounded-sm hover:bg-gray-200 text-[11px]"
+                  className="flex-1 h-7 border rounded-sm text-[11px]"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface-secondary)",
+                    color: "var(--text-primary)",
+                  }}
                 >
                   Complex Sample
                 </button>
@@ -964,16 +1139,22 @@ export default function Home() {
           padding: 0 10px;
           display: flex;
           align-items: center;
-          color: #333;
+          color: var(--text-secondary);
           font-size: 11px;
           transition: background 0.1s;
           white-space: nowrap;
         }
         .toolbar-btn:hover {
-          background: rgba(0, 0, 0, 0.05);
+          background: var(--hover-btn);
         }
         .toolbar-btn:active {
-          background: rgba(0, 0, 0, 0.1);
+          background: var(--hover-btn-active);
+        }
+        .toolbar-dividers > .toolbar-btn + .toolbar-btn {
+          border-left: 1px solid var(--border);
+        }
+        .detail-row:hover {
+          background: var(--hover-btn);
         }
       `}</style>
     </div>

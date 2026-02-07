@@ -89,9 +89,19 @@ const PrimitiveValue = ({
 
   const content = typeof value === "string" ? `"${value}"` : text;
 
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  let color = "var(--text-primary)";
+  if (typeof value === "number") color = "var(--accent)";
+  else if (typeof value === "boolean") color = isDark ? "#d2a8ff" : "#8250df";
+  else if (value === null) color = "var(--text-tertiary)";
+  else if (typeof value === "string") color = isDark ? "#a5d6ff" : "#0a3069";
+
   return (
-    <span className={`${isMatch ? "bg-yellow-200" : ""}`}>
-      <span className="text-black">{content}</span>
+    <span
+      className={`${isMatch ? "rounded px-0.5" : ""}`}
+      style={isMatch ? { backgroundColor: "rgba(234, 179, 8, 0.3)" } : undefined}
+    >
+      <span style={{ color }}>{content}</span>
     </span>
   );
 };
@@ -124,9 +134,16 @@ const JsonNode = memo(function JsonNode({
       className="font-sans text-[11px] leading-tight select-none"
     >
       <div
-        className={`flex items-center gap-1 cursor-pointer py-px whitespace-nowrap transition-colors ${
-          isSelected ? "bg-[#cee6ff]" : "hover:bg-[#f2f6fa]"
-        }`}
+        className="flex items-center gap-1 cursor-pointer py-px whitespace-nowrap transition-colors"
+        style={{
+          backgroundColor: isSelected ? "var(--selection)" : undefined,
+        }}
+        onMouseEnter={(e) => {
+          if (!isSelected) e.currentTarget.style.backgroundColor = "var(--hover-btn)";
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
+        }}
         onClick={() => {
           toggle();
           onSelect?.(path, label, value);
@@ -135,8 +152,15 @@ const JsonNode = memo(function JsonNode({
         {/* Expand/Collapse Icon */}
         <span className="w-4 h-4 flex items-center justify-center shrink-0">
           {isExpandable ? (
-            <span className="border border-gray-400 bg-white w-3 h-3 flex items-center justify-center text-[9px] text-gray-600 font-bold leading-none">
-              {open ? "−" : "+"}
+            <span
+              className="w-3 h-3 flex items-center justify-center text-[9px] font-bold leading-none"
+              style={{
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {open ? "\u2212" : "+"}
             </span>
           ) : (
             <span className="w-3 h-3" />
@@ -146,34 +170,36 @@ const JsonNode = memo(function JsonNode({
         {/* Type Icon */}
         <span className="shrink-0 flex items-center justify-center w-4">
           {isObject(value) && (
-            <span className="text-blue-800 font-bold">{"{}"}</span>
+            <span style={{ color: "var(--accent)" }} className="font-bold">{"{}"}</span>
           )}
           {isArray(value) && (
-            <span className="text-blue-600 font-bold">{"[]"}</span>
+            <span style={{ color: "var(--accent)", opacity: 0.8 }} className="font-bold">{"[]"}</span>
           )}
           {!isExpandable && typeof value === "number" && (
-            <span className="w-2 h-2 bg-green-600 shrink-0" />
+            <span className="w-2 h-2 shrink-0" style={{ backgroundColor: "var(--success)" }} />
           )}
           {!isExpandable && typeof value === "string" && (
-            <span className="w-2 h-2 bg-blue-600 shrink-0" />
+            <span className="w-2 h-2 shrink-0" style={{ backgroundColor: "var(--accent)" }} />
           )}
           {!isExpandable && typeof value === "boolean" && (
-            <span className="w-2 h-2 bg-purple-600 shrink-0" />
+            <span className="w-2 h-2 shrink-0" style={{ backgroundColor: "#8250df" }} />
           )}
         </span>
 
         {/* Label */}
         <span
-          className={`font-medium ${isSelected ? "text-black" : "text-black"} ${
-            isLabelMatch ? "bg-yellow-200" : ""
-          }`}
+          className={`font-medium ${isLabelMatch ? "rounded px-0.5" : ""}`}
+          style={{
+            color: "var(--text-primary)",
+            backgroundColor: isLabelMatch ? "rgba(234, 179, 8, 0.3)" : undefined,
+          }}
         >
           {label}
         </span>
 
         {!isExpandable && (
           <>
-            <span className="text-gray-400 mx-1">:</span>
+            <span style={{ color: "var(--text-tertiary)" }} className="mx-1">:</span>
             <PrimitiveValue
               value={value as Exclude<JSONValue, JSONObject | JSONArray>}
               filter={filter}
@@ -182,7 +208,10 @@ const JsonNode = memo(function JsonNode({
         )}
       </div>
       {open && isExpandable && (
-        <div className="border-l border-gray-100 ml-[7px] pl-1">
+        <div
+          className="ml-[7px] pl-1"
+          style={{ borderLeft: "1px solid var(--border-light)" }}
+        >
           {isObject(value)
             ? Object.entries(value).map(([key, child]) => (
                 <JsonNode
