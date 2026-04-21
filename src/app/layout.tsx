@@ -13,9 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JSON Viewer – Fast Online Formatter",
+  title: "JSON Viewer – Fast Online Formatter by Vishal Chaubey",
   description:
-    "Modern, fast JSON viewer and formatter with tree view, file import, and copy/download support.",
+    "Modern, fast JSON viewer and formatter with tree view, file import, and copy/download support. Built by Vishal Chaubey (vishalchaubey.com).",
+  authors: [{ name: "Vishal Chaubey", url: "https://vishalchaubey.com" }],
+  creator: "Vishal Chaubey",
+  openGraph: {
+    title: "JSON Viewer – Fast Online Formatter",
+    description:
+      "Modern, fast JSON viewer and formatter with tree view, file import, and copy/download support.",
+    url: "https://vishalchaubey.com",
+    siteName: "JSON Viewer by Vishal Chaubey",
+    type: "website",
+  },
   icons: {
     icon: "/icon.png",
   },

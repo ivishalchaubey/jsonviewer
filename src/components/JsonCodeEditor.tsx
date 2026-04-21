@@ -25,6 +25,10 @@ import {
   lineNumbers,
   highlightActiveLineGutter,
   EditorView,
+  ViewPlugin,
+  ViewUpdate,
+  Decoration,
+  DecorationSet,
 } from "@codemirror/view";
 import {
   indentOnInput,
@@ -39,6 +43,8 @@ import {
 import {
   EditorState,
   Extension,
+  StateEffect,
+  Range,
 } from "@codemirror/state";
 import {
   defaultKeymap,
@@ -47,6 +53,97 @@ import {
   indentWithTab,
 } from "@codemirror/commands";
 import { tags } from "@lezer/highlight";
+
+// ─── External Search Highlight (driven by parent search bar) ─────────
+
+const setSearchEffect = StateEffect.define<{
+  term: string;
+  currentIndex: number;
+}>();
+
+// Inline attributes so the colors don't depend on any external CSS.
+// Non-current matches are outlined only; the current match is filled.
+const searchMarkAll = Decoration.mark({
+  attributes: {
+    style:
+      "box-shadow: inset 0 0 0 1px #f59e0b; border-radius: 2px;",
+  },
+});
+const searchMarkCurrent = Decoration.mark({
+  attributes: {
+    style:
+      "background-color: #f59e0b; color: #111; border-radius: 2px; box-shadow: 0 0 0 1px #d97706;",
+  },
+});
+
+function computeSearchDecos(
+  text: string,
+  term: string,
+  currentIndex: number,
+): DecorationSet {
+  if (!term) return Decoration.none;
+  const needle = term.toLowerCase();
+  const lower = text.toLowerCase();
+  const ranges: Range<Decoration>[] = [];
+  let i = 0;
+  let n = 0;
+  while (true) {
+    const idx = lower.indexOf(needle, i);
+    if (idx === -1) break;
+    const deco = n === currentIndex ? searchMarkCurrent : searchMarkAll;
+    ranges.push(deco.range(idx, idx + needle.length));
+    n++;
+    i = idx + needle.length;
+  }
+  return Decoration.set(ranges);
+}
+
+const searchHighlightPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet = Decoration.none;
+    term = "";
+    currentIndex = -1;
+
+    update(update: ViewUpdate) {
+      let recompute = update.docChanged;
+      for (const tr of update.transactions) {
+        for (const ef of tr.effects) {
+          if (ef.is(setSearchEffect)) {
+            this.term = ef.value.term;
+            this.currentIndex = ef.value.currentIndex;
+            recompute = true;
+          }
+        }
+      }
+      if (recompute) {
+        this.decorations = computeSearchDecos(
+          update.state.doc.toString(),
+          this.term,
+          this.currentIndex,
+        );
+      }
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  },
+);
+
+// Locate the nth (0-based) occurrence of `term` in `text`.
+function findNthMatchPos(text: string, term: string, n: number): number {
+  if (!term || n < 0) return -1;
+  const lower = text.toLowerCase();
+  const needle = term.toLowerCase();
+  let i = 0;
+  let count = 0;
+  while (true) {
+    const idx = lower.indexOf(needle, i);
+    if (idx === -1) return -1;
+    if (count === n) return idx;
+    count++;
+    i = idx + needle.length;
+  }
+}
 
 // ─── Custom JSON Linter ───────────────────────────────────────────────
 function jsonLinter(view: EditorView): Diagnostic[] {
@@ -594,25 +691,31 @@ interface JsonCodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDark?: boolean;
+  searchTerm?: string;
+  currentMatchIndex?: number;
 }
 
-interface EditorStats {
+interface CursorStats {
   line: number;
   col: number;
   lines: number;
   chars: number;
-  errors: number;
   selection: number;
 }
 
-export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEditorProps) {
+export function JsonCodeEditor({
+  value,
+  onChange,
+  isDark = false,
+  searchTerm = "",
+  currentMatchIndex = -1,
+}: JsonCodeEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
-  const [stats, setStats] = useState<EditorStats>({
+  const [cursorStats, setCursorStats] = useState<CursorStats>({
     line: 1,
     col: 1,
     lines: 1,
     chars: 0,
-    errors: 0,
     selection: 0,
   });
 
@@ -626,9 +729,7 @@ export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEdit
     }
   }, [value]);
 
-  useEffect(() => {
-    setStats((prev) => ({ ...prev, errors: errorCount }));
-  }, [errorCount]);
+  const stats = { ...cursorStats, errors: errorCount };
 
   const extensions = useMemo<Extension[]>(() => {
     return [
@@ -692,6 +793,9 @@ export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEdit
       search({ top: true }),
       highlightSelectionMatches(),
 
+      // ── External search highlight (driven via setSearchEffect) ──
+      searchHighlightPlugin,
+
       // ── Line wrapping ──
       EditorView.lineWrapping,
 
@@ -702,12 +806,11 @@ export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEdit
           const cursor = st.selection.main.head;
           const line = st.doc.lineAt(cursor);
           const sel = st.selection.main;
-          setStats({
+          setCursorStats({
             line: line.number,
             col: cursor - line.from + 1,
             lines: st.doc.lines,
             chars: st.doc.length,
-            errors: errorCount,
             selection: Math.abs(sel.to - sel.from),
           });
         }
@@ -716,7 +819,7 @@ export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEdit
       // ── Theme ──
       isDark ? darkEditorTheme : lightEditorTheme,
     ];
-  }, [errorCount, isDark]);
+  }, [isDark]);
 
   const handleChange = useCallback(
     (val: string) => {
@@ -724,6 +827,43 @@ export function JsonCodeEditor({ value, onChange, isDark = false }: JsonCodeEdit
     },
     [onChange]
   );
+
+  // Sync external search term / current match into the editor via a state
+  // effect, then scroll the current match into view. Retries on the next
+  // frame if the editor view isn't mounted yet.
+  useEffect(() => {
+    let cancelled = false;
+    const dispatchSearch = () => {
+      if (cancelled) return;
+      const view = editorRef.current?.view;
+      if (!view) {
+        requestAnimationFrame(dispatchSearch);
+        return;
+      }
+      view.dispatch({
+        effects: setSearchEffect.of({
+          term: searchTerm,
+          currentIndex: currentMatchIndex,
+        }),
+      });
+      if (searchTerm && currentMatchIndex >= 0) {
+        const pos = findNthMatchPos(
+          view.state.doc.toString(),
+          searchTerm,
+          currentMatchIndex,
+        );
+        if (pos >= 0) {
+          view.dispatch({
+            effects: EditorView.scrollIntoView(pos, { y: "center" }),
+          });
+        }
+      }
+    };
+    dispatchSearch();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchTerm, currentMatchIndex, value]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "f") {

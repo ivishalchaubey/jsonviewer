@@ -1,22 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 export function useTheme() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
+  // Lazy initializer reads the class that the inline script in layout.tsx
+  // already set before hydration — no effect needed and no flash.
+  const [isDark, setIsDark] = useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark"),
+  );
 
   const toggle = useCallback(() => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("json-viewer-theme", next ? "dark" : "light");
-    } catch {}
-  }, [isDark]);
+    setIsDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      try {
+        localStorage.setItem("json-viewer-theme", next ? "dark" : "light");
+      } catch {}
+      return next;
+    });
+  }, []);
 
   return { isDark, toggle };
 }

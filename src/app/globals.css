@@ -26,6 +26,8 @@
   --status-bar-border: #d0d7de;
   --error: #cf222e;
   --success: #1a7f37;
+  --json-string: #0a3069;
+  --json-bool: #8250df;
 }
 
 .dark {
@@ -54,6 +56,8 @@
   --status-bar-border: #30363d;
   --error: #f85149;
   --success: #3fb950;
+  --json-string: #a5d6ff;
+  --json-bool: #d2a8ff;
 }
 
 @theme inline {
@@ -167,6 +171,26 @@ textarea {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ─── JSON Tree Row Hover/Selection ───────────────────────────────── */
+.json-row {
+  transition: background-color 0.1s ease;
+}
+
+.json-row:hover {
+  background-color: var(--hover-btn);
+}
+
+.json-row-selected,
+.json-row-selected:hover {
+  background-color: var(--selection) !important;
+}
+
+.json-row-current {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+  border-radius: 2px;
 }
 
 /* Autocomplete list animation */

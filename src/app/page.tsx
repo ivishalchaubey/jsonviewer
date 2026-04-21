@@ -13,6 +13,7 @@ import {
   JSONValue,
   JSONObject,
   collectMatches,
+  getValueAtPath,
 } from "@/components/JsonTree";
 import { LoadingSplash } from "@/components/LoadingSplash";
 import { useTheme, ThemeToggle } from "@/components/ThemeToggle";
@@ -37,9 +38,7 @@ export default function Home() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<JSONValue | null>(null);
   const [search, setSearch] = useState("");
-  const [searchMatches, setSearchMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
-  const [viewerMatches, setViewerMatches] = useState<string[]>([]);
   const [viewerMatchIndex, setViewerMatchIndex] = useState(-1);
   const [, startTransition] = useTransition();
 
@@ -76,37 +75,90 @@ export default function Home() {
   const [treeWidth, setTreeWidth] = useState(1000);
   const [isResizing, setIsResizing] = useState(false);
 
-  // Deferred value for better performance with large data
+  // Deferred values for better performance with large data / fast typing
   const deferredInputData = useDeferredValue(inputData);
+  const deferredSearch = useDeferredValue(search);
 
-  // Derived state
-  const parsed = useMemo(() => {
-    if (!deferredInputData.trim()) return null;
+  // Single parse pass produces both the parsed tree and the human-readable
+  // error message. Using the deferred input keeps typing snappy on large
+  // payloads.
+  const { parsed, error } = useMemo(() => {
+    if (!deferredInputData.trim()) {
+      return { parsed: null as JSONValue | null, error: null as string | null };
+    }
     try {
-      return JSON.parse(deferredInputData) as JSONValue;
-    } catch {
-      return null;
+      return {
+        parsed: JSON.parse(deferredInputData) as JSONValue,
+        error: null as string | null,
+      };
+    } catch (err) {
+      return {
+        parsed: null as JSONValue | null,
+        error: err instanceof Error ? err.message : "Invalid JSON",
+      };
     }
   }, [deferredInputData]);
 
-  const error = useMemo(() => {
-    if (!inputData.trim()) return null;
-    try {
-      JSON.parse(inputData);
-      return null;
-    } catch (err) {
-      return err instanceof Error ? err.message : "Invalid JSON";
+  // ─── Search: all positions (text tab) ──────────────────────────────
+  const searchMatches = useMemo<number[]>(() => {
+    const term = deferredSearch.trim();
+    if (!term) return [];
+    const needle = term.toLowerCase();
+    const hay = inputData.toLowerCase();
+    const out: number[] = [];
+    let i = 0;
+    while (true) {
+      const idx = hay.indexOf(needle, i);
+      if (idx === -1) break;
+      out.push(idx);
+      i = idx + needle.length;
     }
-  }, [inputData]);
+    return out;
+  }, [deferredSearch, inputData]);
 
-  // Sync selectedValue when switching to viewer tab or when inputData changes
-  useEffect(() => {
-    if (activeTab === "viewer" && parsed) {
-      // Reset selection when data changes
-      setSelectedPath("JSON");
-      setSelectedValue(parsed);
+  // ─── Search: all matching paths (viewer tab) ───────────────────────
+  const viewerMatches = useMemo<string[]>(() => {
+    const term = deferredSearch.trim();
+    if (!term || !parsed) return [];
+    return collectMatches(parsed, term, "JSON");
+  }, [deferredSearch, parsed]);
+
+  // Reset match index whenever the match set changes (render-phase sync).
+  const [prevSearchMatches, setPrevSearchMatches] = useState(searchMatches);
+  if (prevSearchMatches !== searchMatches) {
+    setPrevSearchMatches(searchMatches);
+    setCurrentMatchIndex(searchMatches.length > 0 ? 0 : -1);
+  }
+  const [prevViewerMatches, setPrevViewerMatches] = useState(viewerMatches);
+  if (prevViewerMatches !== viewerMatches) {
+    setPrevViewerMatches(viewerMatches);
+    setViewerMatchIndex(viewerMatches.length > 0 ? 0 : -1);
+  }
+
+  const currentViewerMatchPath =
+    viewerMatchIndex >= 0 ? viewerMatches[viewerMatchIndex] : undefined;
+
+  // When the current viewer match changes, mirror it into selectedPath so
+  // the details panel & tree highlight stay in sync. Uses the render-phase
+  // sync pattern to avoid `setState-in-effect` cascading renders.
+  const [prevCurrentMatchPath, setPrevCurrentMatchPath] = useState<
+    string | undefined
+  >(undefined);
+  if (
+    activeTab === "viewer" &&
+    currentViewerMatchPath !== prevCurrentMatchPath
+  ) {
+    setPrevCurrentMatchPath(currentViewerMatchPath);
+    if (currentViewerMatchPath) {
+      setSelectedPath(currentViewerMatchPath);
+      setSelectedValue(getValueAtPath(parsed, currentViewerMatchPath));
     }
-  }, [activeTab, parsed]);
+  }
+
+  // Fallback defaults (computed at render) so the details panel shows the
+  // root when nothing has been selected yet.
+  const displaySelectedPath = selectedPath ?? (parsed ? "JSON" : null);
+  const displaySelectedValue = selectedValue ?? parsed;
 
   const formatJson = useCallback(() => {
     try {
@@ -134,91 +186,43 @@ export default function Home() {
     setSelectedValue(null);
     setSelectedPath(null);
     setSearch("");
-    setSearchMatches([]);
     setCurrentMatchIndex(-1);
-    setViewerMatches([]);
     setViewerMatchIndex(-1);
   }, []);
 
+  // Search runs automatically via useMemo; the GO button simply snaps back
+  // to the first match (useful when navigating has taken you far from it).
   const handleSearch = useCallback(() => {
-    const searchTerm = search.trim();
-
-    if (activeTab === "text" && searchTerm) {
-      // For text tab, find all matches in the text content
-      const text = inputData.toLowerCase();
-      const query = searchTerm.toLowerCase();
-      const matches: number[] = [];
-      let pos = text.indexOf(query);
-
-      while (pos !== -1) {
-        matches.push(pos);
-        pos = text.indexOf(query, pos + 1);
-      }
-
-      setSearchMatches(matches);
-      if (matches.length > 0) {
-        setCurrentMatchIndex(0);
-      } else {
-        setCurrentMatchIndex(-1);
-      }
-    } else if (activeTab === "viewer" && parsed && searchTerm) {
-      // For viewer tab, collect all matching paths
-      const matches = collectMatches(parsed, searchTerm, "JSON");
-      setViewerMatches(matches);
-      if (matches.length > 0) {
-        setViewerMatchIndex(0);
-        setSelectedPath(matches[0]);
-      } else {
-        setViewerMatchIndex(-1);
-      }
+    if (activeTab === "text") {
+      if (searchMatches.length > 0) setCurrentMatchIndex(0);
+    } else if (viewerMatches.length > 0) {
+      setViewerMatchIndex(0);
     }
-  }, [search, activeTab, inputData, parsed]);
+  }, [activeTab, searchMatches, viewerMatches]);
 
   const handleNext = useCallback(() => {
     if (activeTab === "text") {
       if (searchMatches.length === 0) return;
-
-      const nextIndex = (currentMatchIndex + 1) % searchMatches.length;
-      setCurrentMatchIndex(nextIndex);
-    } else if (activeTab === "viewer") {
+      setCurrentMatchIndex((i) => (i + 1) % searchMatches.length);
+    } else {
       if (viewerMatches.length === 0) return;
-
-      const nextIndex = (viewerMatchIndex + 1) % viewerMatches.length;
-      setViewerMatchIndex(nextIndex);
-      setSelectedPath(viewerMatches[nextIndex]);
+      setViewerMatchIndex((i) => (i + 1) % viewerMatches.length);
     }
-  }, [
-    activeTab,
-    searchMatches,
-    currentMatchIndex,
-    viewerMatches,
-    viewerMatchIndex,
-  ]);
+  }, [activeTab, searchMatches.length, viewerMatches.length]);
 
   const handlePrevious = useCallback(() => {
     if (activeTab === "text") {
       if (searchMatches.length === 0) return;
-
-      const prevIndex =
-        currentMatchIndex <= 0
-          ? searchMatches.length - 1
-          : currentMatchIndex - 1;
-      setCurrentMatchIndex(prevIndex);
-    } else if (activeTab === "viewer") {
+      setCurrentMatchIndex((i) =>
+        i <= 0 ? searchMatches.length - 1 : i - 1,
+      );
+    } else {
       if (viewerMatches.length === 0) return;
-
-      const prevIndex =
-        viewerMatchIndex <= 0 ? viewerMatches.length - 1 : viewerMatchIndex - 1;
-      setViewerMatchIndex(prevIndex);
-      setSelectedPath(viewerMatches[prevIndex]);
+      setViewerMatchIndex((i) =>
+        i <= 0 ? viewerMatches.length - 1 : i - 1,
+      );
     }
-  }, [
-    activeTab,
-    searchMatches,
-    currentMatchIndex,
-    viewerMatches,
-    viewerMatchIndex,
-  ]);
+  }, [activeTab, searchMatches.length, viewerMatches.length]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -502,11 +506,11 @@ export default function Home() {
                   >
                     {parsed ? (
                       <JsonTree
-                        key={search || "default"}
                         value={parsed}
                         rootLabel="JSON"
-                        selectedPath={selectedPath ?? undefined}
-                        filter={search}
+                        selectedPath={displaySelectedPath ?? undefined}
+                        filter={deferredSearch}
+                        currentMatchPath={currentViewerMatchPath}
                         onSelect={(path, _label, value) => {
                           setSelectedPath(path);
                           setSelectedValue(value);
@@ -551,30 +555,30 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="flex-1 overflow-auto">
-                      {selectedValue !== null ? (
-                        typeof selectedValue === "object" &&
-                        selectedValue !== null ? (
-                          Object.entries(selectedValue as JSONObject).map(
-                            ([key, val]) => (
+                      {displaySelectedValue !== null ? (
+                        typeof displaySelectedValue === "object" &&
+                        displaySelectedValue !== null ? (
+                          Object.entries(
+                            displaySelectedValue as JSONObject,
+                          ).map(([key, val]) => (
+                            <div
+                              key={key}
+                              className="flex border-b h-[22px] items-center text-[10px] detail-row"
+                              style={{ borderColor: "var(--border-light)" }}
+                            >
                               <div
-                                key={key}
-                                className="flex border-b h-[22px] items-center text-[10px] detail-row"
-                                style={{ borderColor: "var(--border-light)" }}
+                                className="flex-1 px-2 border-r font-medium truncate"
+                                style={{ borderColor: "var(--border-light)", color: "var(--text-primary)" }}
                               >
-                                <div
-                                  className="flex-1 px-2 border-r font-medium truncate"
-                                  style={{ borderColor: "var(--border-light)", color: "var(--text-primary)" }}
-                                >
-                                  {key}
-                                </div>
-                                <div className="w-[150px] px-2 truncate" style={{ color: "var(--text-secondary)" }}>
-                                  {typeof val === "object" && val !== null
-                                    ? "..."
-                                    : String(val)}
-                                </div>
+                                {key}
                               </div>
-                            ),
-                          )
+                              <div className="w-[150px] px-2 truncate" style={{ color: "var(--text-secondary)" }}>
+                                {typeof val === "object" && val !== null
+                                  ? "..."
+                                  : String(val)}
+                              </div>
+                            </div>
+                          ))
                         ) : (
                           <div
                             className="flex h-[22px] items-center text-[10px]"
@@ -587,7 +591,7 @@ export default function Home() {
                               Value
                             </div>
                             <div className="w-[150px] px-2 truncate font-semibold" style={{ color: "var(--text-primary)" }}>
-                              {String(selectedValue)}
+                              {String(displaySelectedValue)}
                             </div>
                           </div>
                         )
@@ -603,8 +607,10 @@ export default function Home() {
                 <div className="flex-1 flex flex-col relative min-h-0" style={{ backgroundColor: "var(--surface)" }}>
                   <JsonCodeEditor
                     value={inputData}
-                    onChange={(val) => setInputData(val)}
+                    onChange={setInputData}
                     isDark={isDark}
+                    searchTerm={deferredSearch}
+                    currentMatchIndex={currentMatchIndex}
                   />
                 </div>
               )}
@@ -700,7 +706,7 @@ export default function Home() {
 
       {/* Footer */}
       <div
-        className="fixed bottom-0 left-0 right-0 h-6 border-t flex items-center justify-center gap-1 z-60"
+        className="fixed bottom-0 left-0 right-0 h-6 border-t flex items-center justify-center gap-2 z-60"
         style={{
           backgroundColor: "var(--surface-secondary)",
           borderColor: "var(--border)",
@@ -708,7 +714,22 @@ export default function Home() {
       >
         <span className="text-[11px] flex items-center gap-1" style={{ color: "var(--text-primary)" }}>
           Made with <span className="text-red-600">&#10084;</span> for the community.
-          This tool is free forever. Happy JSON Viewing! &#128640;
+          Free forever. Happy JSON Viewing! &#128640;
+        </span>
+        <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+          &#183;
+        </span>
+        <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          Built by{" "}
+          <a
+            href="https://vishalchaubey.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold hover:underline"
+            style={{ color: "var(--accent)" }}
+          >
+            Vishal Chaubey
+          </a>
         </span>
       </div>
 
@@ -1013,6 +1034,35 @@ export default function Home() {
                 <p className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
                   This tool is free and open for the community.
                 </p>
+                <div
+                  className="mt-3 pt-3 text-[11px]"
+                  style={{
+                    borderTop: "1px solid var(--border-light)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Designed &amp; built by{" "}
+                  <a
+                    href="https://vishalchaubey.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold hover:underline"
+                    style={{ color: "var(--accent)" }}
+                  >
+                    Vishal Chaubey
+                  </a>
+                  . Visit{" "}
+                  <a
+                    href="https://vishalchaubey.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                    style={{ color: "var(--accent)" }}
+                  >
+                    vishalchaubey.com
+                  </a>{" "}
+                  for more projects.
+                </div>
               </div>
             )}
           </div>
