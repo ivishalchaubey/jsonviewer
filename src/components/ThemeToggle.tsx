@@ -1,26 +1,56 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { IconMoon, IconSun } from "@/components/ui/icons";
+
+const THEME_STORAGE_KEY = "json-viewer-theme";
+
+function getInitialIsDark() {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.classList.contains("dark");
+}
+
+function applyTheme(isDark: boolean) {
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+}
+
+function getSavedTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export function useTheme() {
   // Lazy initializer reads the class that the inline script in layout.tsx
   // already set before hydration — no effect needed and no flash.
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
+  const [isDark, setIsDark] = useState(getInitialIsDark);
+
+  useEffect(() => {
+    applyTheme(isDark);
+  }, [isDark]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemThemeChange = (event: MediaQueryListEvent) => {
+      if (getSavedTheme()) return;
+      setIsDark(event.matches);
+    };
+
+    media.addEventListener("change", handleSystemThemeChange);
+    return () => media.removeEventListener("change", handleSystemThemeChange);
+  }, []);
 
   const toggle = useCallback(() => {
-    setIsDark((prev) => {
-      const next = !prev;
-      document.documentElement.classList.toggle("dark", next);
-      try {
-        localStorage.setItem("json-viewer-theme", next ? "dark" : "light");
-      } catch {}
-      return next;
-    });
-  }, []);
+    const next = !isDark;
+    applyTheme(next);
+    setIsDark(next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
+    } catch {}
+  }, [isDark]);
 
   return { isDark, toggle };
 }
@@ -34,16 +64,22 @@ export function ThemeToggle({ isDark, onToggle }: ThemeToggleProps) {
   return (
     <button
       onClick={onToggle}
-      className="flex items-center gap-1.5 px-2 h-full transition-colors"
+      className="toolbar-btn flex items-center gap-1.5 h-7 px-2 rounded-md transition-colors"
       style={{ color: "var(--text-secondary)" }}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-pressed={isDark}
+      aria-label="Toggle theme"
+      suppressHydrationWarning
+      title="Toggle theme"
     >
-      <span className="text-[14px] leading-none">
-        {isDark ? "\u2600\uFE0F" : "\uD83C\uDF19"}
+      <span className="theme-toggle-icon shrink-0" aria-hidden>
+        <span className="theme-toggle-sun">
+          <IconSun />
+        </span>
+        <span className="theme-toggle-moon">
+          <IconMoon />
+        </span>
       </span>
-      <span className="text-[11px] hidden sm:inline">
-        {isDark ? "Light" : "Dark"}
-      </span>
+      <span className="text-[11px] hidden sm:inline">Theme</span>
     </button>
   );
 }

@@ -7,8 +7,6 @@
   --surface-secondary: #f6f8fa;
   --border: #d0d7de;
   --border-light: #eaeef2;
-  --toolbar-bg: linear-gradient(to bottom, #f9f9fb, #eaeef2);
-  --active-tab: #ffffff;
   --hover-btn: rgba(0, 0, 0, 0.04);
   --hover-btn-active: rgba(0, 0, 0, 0.08);
   --text-primary: #1a1a2e;
@@ -21,7 +19,6 @@
   --scrollbar-thumb: #c8ccd0;
   --scrollbar-thumb-hover: #8c959f;
   --modal-shadow: rgba(0, 0, 0, 0.15);
-  --code-bg: #f6f8fa;
   --status-bar-bg: #f6f8fa;
   --status-bar-border: #d0d7de;
   --error: #cf222e;
@@ -37,8 +34,6 @@
   --surface-secondary: #1c2128;
   --border: #30363d;
   --border-light: #21262d;
-  --toolbar-bg: linear-gradient(to bottom, #1c2128, #161b22);
-  --active-tab: #161b22;
   --hover-btn: rgba(255, 255, 255, 0.06);
   --hover-btn-active: rgba(255, 255, 255, 0.1);
   --text-primary: #e6edf3;
@@ -51,7 +46,6 @@
   --scrollbar-thumb: #30363d;
   --scrollbar-thumb-hover: #484f58;
   --modal-shadow: rgba(0, 0, 0, 0.5);
-  --code-bg: #1c2128;
   --status-bar-bg: #1c2128;
   --status-bar-border: #30363d;
   --error: #f85149;
@@ -171,6 +165,78 @@ textarea {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ─── Shared UI Helpers ──────────────────────────────────────────── */
+.toolbar-btn {
+  transition: background-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: var(--hover-btn);
+  color: var(--text-primary);
+}
+
+.toolbar-btn:active:not(:disabled) {
+  background: var(--hover-btn-active);
+  transform: scale(0.97);
+}
+
+.toolbar-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.theme-toggle-icon {
+  color: var(--text-tertiary);
+  display: inline-flex;
+  height: 14px;
+  width: 14px;
+}
+
+.theme-toggle-icon > span {
+  display: inline-flex;
+}
+
+.theme-toggle-sun {
+  display: none !important;
+}
+
+.dark .theme-toggle-sun {
+  display: inline-flex !important;
+}
+
+.dark .theme-toggle-moon {
+  display: none !important;
+}
+
+.search-field {
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.search-field:focus-within {
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+
+/* Toast pop-in animation */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 0.18s ease-out;
+  pointer-events: auto;
+}
+
+.detail-row:hover {
+  background: var(--hover-btn);
 }
 
 /* ─── JSON Tree Row Hover/Selection ───────────────────────────────── */
