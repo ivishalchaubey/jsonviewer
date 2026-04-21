@@ -15,14 +15,16 @@ import {
 } from "@/components/JsonTree";
 import { LoadingSplash } from "@/components/LoadingSplash";
 import { useTheme } from "@/components/ThemeToggle";
-import { AppHeader, type TabId } from "@/components/layout/AppHeader";
+import { AppHeader } from "@/components/layout/AppHeader";
+
+type HomeTab = "viewer" | "text";
 import { Toolbar } from "@/components/layout/Toolbar";
 import { Footer } from "@/components/layout/Footer";
 import { ViewerPane } from "@/components/ViewerPane";
-import { JsonComparePane } from "@/components/JsonComparePane";
 import { AboutModal } from "@/components/modals/AboutModal";
 import { LoadModal } from "@/components/modals/LoadModal";
 import { ToastStack } from "@/components/ui/Toast";
+import { useJsonFontSize } from "@/hooks/useJsonFontSize";
 import { useToast } from "@/hooks/useToast";
 
 const JsonCodeEditor = dynamic(
@@ -56,7 +58,7 @@ const SAMPLES = {
 export default function Home() {
   // ─── State ────────────────────────────────────────────────────────
   const [inputData, setInputData] = useState("");
-  const [activeTab, setActiveTab] = useState<TabId>("text");
+  const [activeTab, setActiveTab] = useState<HomeTab>("text");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<JSONValue | null>(null);
   const [search, setSearch] = useState("");
@@ -66,6 +68,7 @@ export default function Home() {
 
   const { isDark, toggle: toggleTheme } = useTheme();
   const { toasts, show: showToast } = useToast();
+  const jsonFont = useJsonFontSize();
 
   // Loading / modals
   const [isLoading, setIsLoading] = useState(false);
@@ -330,8 +333,13 @@ export default function Home() {
 
       <AppHeader
         activeTab={activeTab}
-        onTabChange={setActiveTab}
         isDark={isDark}
+        jsonFontSize={jsonFont.fontSize}
+        canDecreaseFontSize={jsonFont.canDecrease}
+        canIncreaseFontSize={jsonFont.canIncrease}
+        onDecreaseFontSize={jsonFont.decrease}
+        onIncreaseFontSize={jsonFont.increase}
+        onResetFontSize={jsonFont.reset}
         onThemeToggle={toggleTheme}
         onOpenAbout={() => setIsAboutOpen(true)}
       />
@@ -340,28 +348,25 @@ export default function Home() {
         className="flex-1 flex flex-col overflow-hidden"
         style={{ backgroundColor: "var(--surface)" }}
       >
-        {activeTab !== "compare" && (
-          <Toolbar
-            activeTab={activeTab}
-            onCopy={copyToClipboard}
-            onFormat={formatJson}
-            onMinify={minifyJson}
-            onLoad={() => setIsLoadModalOpen(true)}
-            onClear={clearAll}
-            searchValue={search}
-            onSearchChange={setSearch}
-            searchPlaceholder={searchPlaceholder}
-            totalMatches={totalMatches}
-            currentIndex={currentIndex}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-          />
-        )}
+        <Toolbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onCopy={copyToClipboard}
+          onFormat={formatJson}
+          onMinify={minifyJson}
+          onLoad={() => setIsLoadModalOpen(true)}
+          onClear={clearAll}
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={searchPlaceholder}
+          totalMatches={totalMatches}
+          currentIndex={currentIndex}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+        />
 
         <div className="flex-1 flex min-h-0 relative">
-          {activeTab === "compare" ? (
-            <JsonComparePane sourceJson={inputData} isDark={isDark} />
-          ) : activeTab === "viewer" ? (
+          {activeTab === "viewer" ? (
             <ViewerPane
               parsed={parsed}
               error={error}
@@ -369,6 +374,7 @@ export default function Home() {
               selectedPath={displaySelectedPath}
               selectedValue={displaySelectedValue}
               currentMatchPath={currentViewerMatchPath}
+              fontSize={jsonFont.fontSize}
               onSelect={(path, value) => {
                 setSelectedPath(path);
                 setSelectedValue(value);
@@ -385,6 +391,7 @@ export default function Home() {
                 value={inputData}
                 onChange={handleInputChange}
                 isDark={isDark}
+                fontSize={jsonFont.fontSize}
                 searchTerm={deferredSearch}
                 currentMatchIndex={currentMatchIndex}
               />

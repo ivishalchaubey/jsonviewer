@@ -84,3 +84,47 @@ export const IconMoon = () => (
     <path d="M20.99 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.78 9.79Z" />
   </svg>
 );
+
+export const IconViewer = () => (
+  <svg {...iconProps}>
+    <path d="M3 5h6M3 9h6M3 13h4M14 5h7M14 9h7M14 13h5M14 17h7" />
+    <circle cx="10" cy="17" r="1.5" />
+  </svg>
+);
+
+export const IconDiff = () => (
+  <svg {...iconProps}>
+    <path d="M8 3v12l-3-3M16 21V9l3 3" />
+    <path d="M5 12l3 3M19 12l-3-3" />
+  </svg>
+);
+
+export const IconTree = () => (
+  <svg {...iconProps}>
+    <path d="M5 4h4M5 12h4M5 20h4M11 4v16M11 8h4M11 16h4M17 4v8M17 16v4" />
+  </svg>
+);
+
+export const IconCode = () => (
+  <svg {...iconProps}>
+    <path d="M8 6l-5 6 5 6M16 6l5 6-5 6M13 4l-2 16" />
+  </svg>
+);
+
+export const IconFontMinus = () => (
+  <svg {...iconProps}>
+    <path d="M4 17l5-12 5 12M6 13h6M16 15h5" />
+  </svg>
+);
+
+export const IconFontPlus = () => (
+  <svg {...iconProps}>
+    <path d="M4 17l5-12 5 12M6 13h6M18.5 10v8M14.5 14h8" />
+  </svg>
+);
+
+export const IconFontReset = () => (
+  <svg {...iconProps}>
+    <path d="M4 17l5-12 5 12M6 13h6M18 7v6h-6M18 13a5 5 0 1 1-1.5-3.5" />
+  </svg>
+);

@@ -5,17 +5,19 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconClose,
+  IconCode,
   IconCopy,
   IconFormat,
   IconMinify,
   IconSearch,
   IconTrash,
+  IconTree,
   IconUpload,
 } from "@/components/ui/icons";
-import type { TabId } from "@/components/layout/AppHeader";
-
 interface ToolbarProps {
-  activeTab: TabId;
+  /** Only viewer/text — compare lives on its own route. */
+  activeTab: "viewer" | "text";
+  onTabChange: (tab: "viewer" | "text") => void;
   onCopy: () => void;
   onFormat: () => void;
   onMinify: () => void;
@@ -34,6 +36,7 @@ interface ToolbarProps {
 
 export function Toolbar({
   activeTab,
+  onTabChange,
   onCopy,
   onFormat,
   onMinify,
@@ -59,6 +62,10 @@ export function Toolbar({
         backgroundColor: "var(--surface)",
       }}
     >
+      {/* ── View mode segmented control ─────────────────────── */}
+      <SegmentedToggle activeTab={activeTab} onChange={onTabChange} />
+      <Divider />
+
       {/* ── Primary actions (tab-aware) ─────────────────────── */}
       <ToolbarButton
         onClick={onCopy}
@@ -180,5 +187,64 @@ function Divider() {
       className="h-4 w-px mx-1.5 shrink-0"
       style={{ backgroundColor: "var(--border)" }}
     />
+  );
+}
+
+function SegmentedToggle({
+  activeTab,
+  onChange,
+}: {
+  activeTab: "viewer" | "text";
+  onChange: (tab: "viewer" | "text") => void;
+}) {
+  const options: {
+    id: "viewer" | "text";
+    label: string;
+    icon: React.ReactNode;
+    title: string;
+  }[] = [
+    { id: "viewer", label: "Tree", icon: <IconTree />, title: "Tree view" },
+    { id: "text", label: "Raw", icon: <IconCode />, title: "Raw text editor" },
+  ];
+
+  return (
+    <div
+      className="flex items-center p-0.5 rounded-md shrink-0"
+      role="tablist"
+      aria-label="View mode"
+      style={{ backgroundColor: "var(--surface-secondary)" }}
+    >
+      {options.map((opt) => {
+        const active = opt.id === activeTab;
+        return (
+          <button
+            key={opt.id}
+            role="tab"
+            aria-selected={active}
+            title={opt.title}
+            onClick={() => onChange(opt.id)}
+            className="h-6 px-2 rounded flex items-center gap-1.5 text-[11px] font-medium transition-colors"
+            style={{
+              backgroundColor: active ? "var(--surface)" : "transparent",
+              color: active ? "var(--text-primary)" : "var(--text-secondary)",
+              boxShadow: active
+                ? "0 1px 2px rgba(0,0,0,0.08)"
+                : undefined,
+            }}
+          >
+            <span
+              className="shrink-0"
+              style={{
+                color: active ? "var(--accent)" : "var(--text-tertiary)",
+              }}
+              aria-hidden
+            >
+              {opt.icon}
+            </span>
+            <span>{opt.label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

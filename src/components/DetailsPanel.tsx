@@ -4,13 +4,14 @@ import type { JSONObject, JSONValue } from "@/components/JsonTree";
 
 interface DetailsPanelProps {
   value: JSONValue | null;
+  fontSize?: number;
 }
 
-export function DetailsPanel({ value }: DetailsPanelProps) {
+export function DetailsPanel({ value, fontSize = 13 }: DetailsPanelProps) {
   return (
     <div
       className="flex-1 flex flex-col overflow-hidden min-w-105"
-      style={{ backgroundColor: "var(--surface)" }}
+      style={{ backgroundColor: "var(--surface)", fontSize }}
     >
       {/* Column headers */}
       <div
@@ -45,13 +46,19 @@ export function DetailsPanel({ value }: DetailsPanelProps) {
 
       {/* Rows */}
       <div className="flex-1 overflow-auto">
-        <DetailsBody value={value} />
+        <DetailsBody value={value} fontSize={fontSize} />
       </div>
     </div>
   );
 }
 
-function DetailsBody({ value }: { value: JSONValue | null }) {
+function DetailsBody({
+  value,
+  fontSize,
+}: {
+  value: JSONValue | null;
+  fontSize: number;
+}) {
   if (value === null || value === undefined) {
     return (
       <div
@@ -69,8 +76,12 @@ function DetailsBody({ value }: { value: JSONValue | null }) {
         {Object.entries(value as JSONObject).map(([key, val]) => (
           <div
             key={key}
-            className="flex border-b h-[22px] items-center text-[10px] detail-row"
-            style={{ borderColor: "var(--border-light)" }}
+            className="flex border-b items-center detail-row"
+            style={{
+              borderColor: "var(--border-light)",
+              minHeight: Math.max(22, fontSize + 10),
+              fontSize: Math.max(10, fontSize - 2),
+            }}
           >
             <div
               className="flex-1 px-2 border-r font-medium truncate"
@@ -95,8 +106,12 @@ function DetailsBody({ value }: { value: JSONValue | null }) {
 
   return (
     <div
-      className="flex h-[22px] items-center text-[10px]"
-      style={{ backgroundColor: "var(--selection)" }}
+      className="flex items-center"
+      style={{
+        backgroundColor: "var(--selection)",
+        minHeight: Math.max(22, fontSize + 10),
+        fontSize: Math.max(10, fontSize - 2),
+      }}
     >
       <div
         className="flex-1 px-2 border-r font-medium truncate"

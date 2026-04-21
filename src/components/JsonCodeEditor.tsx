@@ -691,6 +691,7 @@ interface JsonCodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDark?: boolean;
+  fontSize?: number;
   searchTerm?: string;
   currentMatchIndex?: number;
 }
@@ -707,6 +708,7 @@ export function JsonCodeEditor({
   value,
   onChange,
   isDark = false,
+  fontSize = 13,
   searchTerm = "",
   currentMatchIndex = -1,
 }: JsonCodeEditorProps) {
@@ -818,8 +820,21 @@ export function JsonCodeEditor({
 
       // ── Theme ──
       isDark ? darkEditorTheme : lightEditorTheme,
+      EditorView.theme({
+        "&, .cm-scroller, .cm-content, .cm-line": {
+          fontSize: `${fontSize}px`,
+          lineHeight: `${Math.max(18, fontSize + 7)}px`,
+        },
+        ".cm-lineNumbers .cm-gutterElement": {
+          fontSize: `${Math.max(10, fontSize - 2)}px`,
+          lineHeight: `${Math.max(18, fontSize + 7)}px`,
+        },
+        ".cm-tooltip, .cm-search input, .cm-search button": {
+          fontSize: `${Math.max(11, fontSize - 1)}px`,
+        },
+      }),
     ];
-  }, [isDark]);
+  }, [fontSize, isDark]);
 
   const handleChange = useCallback(
     (val: string) => {
@@ -893,7 +908,7 @@ export function JsonCodeEditor({
           placeholder="Paste or type your JSON here..."
           basicSetup={false}
           height="100%"
-          style={{ height: "100%" }}
+          style={{ height: "100%", fontSize }}
           theme={isDark ? "dark" : "light"}
         />
       </div>

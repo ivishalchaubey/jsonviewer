@@ -189,6 +189,7 @@ interface NodeProps {
   selectedPath?: string;
   filter?: string;
   currentMatchPath?: string;
+  fontSize: number;
 }
 
 const JsonNode = memo(function JsonNode({
@@ -200,6 +201,7 @@ const JsonNode = memo(function JsonNode({
   selectedPath,
   filter,
   currentMatchPath,
+  fontSize,
 }: NodeProps) {
   const expandable = isObject(value) || isArray(value);
   const [open, setOpen] = useState(true);
@@ -240,8 +242,12 @@ const JsonNode = memo(function JsonNode({
 
   return (
     <div
-      style={{ paddingLeft: depth === 0 ? 0 : INDENT }}
-      className="font-sans text-[11px] leading-tight select-none"
+      style={{
+        paddingLeft: depth === 0 ? 0 : INDENT,
+        fontSize,
+        lineHeight: `${Math.max(18, fontSize + 7)}px`,
+      }}
+      className="font-sans select-none"
     >
       <div ref={rowRef} className={rowClass} onClick={handleClick}>
         {/* Expand/Collapse icon */}
@@ -336,6 +342,7 @@ const JsonNode = memo(function JsonNode({
                   selectedPath={selectedPath}
                   filter={filter}
                   currentMatchPath={currentMatchPath}
+                  fontSize={fontSize}
                 />
               ))
             : (value as JSONArray).map((child, i) => (
@@ -349,6 +356,7 @@ const JsonNode = memo(function JsonNode({
                   selectedPath={selectedPath}
                   filter={filter}
                   currentMatchPath={currentMatchPath}
+                  fontSize={fontSize}
                 />
               ))}
         </div>
@@ -366,6 +374,7 @@ interface JsonTreeProps {
   selectedPath?: string;
   filter?: string;
   currentMatchPath?: string;
+  fontSize?: number;
 }
 
 export function JsonTree({
@@ -375,6 +384,7 @@ export function JsonTree({
   selectedPath,
   filter,
   currentMatchPath,
+  fontSize = 13,
 }: JsonTreeProps) {
   return (
     <div className="py-1">
@@ -387,6 +397,7 @@ export function JsonTree({
         selectedPath={selectedPath}
         filter={filter}
         currentMatchPath={currentMatchPath}
+        fontSize={fontSize}
       />
     </div>
   );

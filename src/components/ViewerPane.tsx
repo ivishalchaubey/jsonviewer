@@ -16,6 +16,7 @@ interface ViewerPaneProps {
   selectedPath: string | null;
   selectedValue: JSONValue | null;
   currentMatchPath?: string;
+  fontSize?: number;
   onSelect: (path: string, value: JSONValue) => void;
   onLoadSample: () => void;
   onOpenLoad: () => void;
@@ -28,6 +29,7 @@ export function ViewerPane({
   selectedPath,
   selectedValue,
   currentMatchPath,
+  fontSize = 13,
   onSelect,
   onLoadSample,
   onOpenLoad,
@@ -76,6 +78,7 @@ export function ViewerPane({
             selectedPath={selectedPath ?? undefined}
             filter={filter}
             currentMatchPath={currentMatchPath}
+            fontSize={fontSize}
             onSelect={(path, _label, value) => onSelect(path, value)}
           />
         ) : (
@@ -95,7 +98,7 @@ export function ViewerPane({
         onMouseDown={() => setIsResizing(true)}
       />
 
-      <DetailsPanel value={selectedValue} />
+      <DetailsPanel value={selectedValue} fontSize={fontSize} />
     </div>
   );
 }
