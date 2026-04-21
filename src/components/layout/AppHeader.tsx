@@ -3,7 +3,7 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { IconInfo } from "@/components/ui/icons";
 
-export type TabId = "viewer" | "text";
+export type TabId = "viewer" | "text" | "compare";
 
 interface AppHeaderProps {
   activeTab: TabId;
@@ -16,6 +16,7 @@ interface AppHeaderProps {
 const TABS: { id: TabId; label: string }[] = [
   { id: "viewer", label: "Viewer" },
   { id: "text", label: "Text" },
+  { id: "compare", label: "Compare" },
 ];
 
 export function AppHeader({

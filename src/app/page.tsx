@@ -19,6 +19,7 @@ import { AppHeader, type TabId } from "@/components/layout/AppHeader";
 import { Toolbar } from "@/components/layout/Toolbar";
 import { Footer } from "@/components/layout/Footer";
 import { ViewerPane } from "@/components/ViewerPane";
+import { JsonComparePane } from "@/components/JsonComparePane";
 import { AboutModal } from "@/components/modals/AboutModal";
 import { LoadModal } from "@/components/modals/LoadModal";
 import { ToastStack } from "@/components/ui/Toast";
@@ -339,24 +340,28 @@ export default function Home() {
         className="flex-1 flex flex-col overflow-hidden"
         style={{ backgroundColor: "var(--surface)" }}
       >
-        <Toolbar
-          activeTab={activeTab}
-          onCopy={copyToClipboard}
-          onFormat={formatJson}
-          onMinify={minifyJson}
-          onLoad={() => setIsLoadModalOpen(true)}
-          onClear={clearAll}
-          searchValue={search}
-          onSearchChange={setSearch}
-          searchPlaceholder={searchPlaceholder}
-          totalMatches={totalMatches}
-          currentIndex={currentIndex}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-        />
+        {activeTab !== "compare" && (
+          <Toolbar
+            activeTab={activeTab}
+            onCopy={copyToClipboard}
+            onFormat={formatJson}
+            onMinify={minifyJson}
+            onLoad={() => setIsLoadModalOpen(true)}
+            onClear={clearAll}
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={searchPlaceholder}
+            totalMatches={totalMatches}
+            currentIndex={currentIndex}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+          />
+        )}
 
         <div className="flex-1 flex min-h-0 relative">
-          {activeTab === "viewer" ? (
+          {activeTab === "compare" ? (
+            <JsonComparePane sourceJson={inputData} isDark={isDark} />
+          ) : activeTab === "viewer" ? (
             <ViewerPane
               parsed={parsed}
               error={error}
