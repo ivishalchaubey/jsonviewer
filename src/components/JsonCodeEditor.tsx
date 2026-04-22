@@ -98,6 +98,47 @@ function computeSearchDecos(
   return Decoration.set(ranges);
 }
 
+// ─── External Line-Diff Highlight (for the Compare page) ─────────────
+
+const setDiffLinesEffect = StateEffect.define<Set<number>>();
+
+const diffLineHighlightPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet = Decoration.none;
+    lines: Set<number> = new Set();
+
+    update(update: ViewUpdate) {
+      let touched = update.docChanged;
+      for (const tr of update.transactions) {
+        for (const ef of tr.effects) {
+          if (ef.is(setDiffLinesEffect)) {
+            this.lines = ef.value;
+            touched = true;
+          }
+        }
+      }
+      if (touched) {
+        const ranges: Range<Decoration>[] = [];
+        const doc = update.state.doc;
+        const sorted = Array.from(this.lines).sort((a, b) => a - b);
+        for (const idx of sorted) {
+          if (idx + 1 < 1 || idx + 1 > doc.lines) continue;
+          const line = doc.line(idx + 1);
+          ranges.push(
+            Decoration.line({
+              attributes: { class: "cm-diff-line" },
+            }).range(line.from),
+          );
+        }
+        this.decorations = Decoration.set(ranges);
+      }
+    }
+  },
+  {
+    decorations: (v) => v.decorations,
+  },
+);
+
 const searchHighlightPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet = Decoration.none;
@@ -694,6 +735,10 @@ interface JsonCodeEditorProps {
   fontSize?: number;
   searchTerm?: string;
   currentMatchIndex?: number;
+  /** 0-based line indices to highlight as "differs from the other side". */
+  diffLines?: Set<number>;
+  /** Fires once when the underlying CodeMirror EditorView is mounted. */
+  onViewReady?: (view: EditorView) => void;
 }
 
 interface CursorStats {
@@ -711,6 +756,8 @@ export function JsonCodeEditor({
   fontSize = 13,
   searchTerm = "",
   currentMatchIndex = -1,
+  diffLines,
+  onViewReady,
 }: JsonCodeEditorProps) {
   const editorRef = useRef<ReactCodeMirrorRef>(null);
   const [cursorStats, setCursorStats] = useState<CursorStats>({
@@ -798,6 +845,9 @@ export function JsonCodeEditor({
       // ── External search highlight (driven via setSearchEffect) ──
       searchHighlightPlugin,
 
+      // ── External diff-line highlight (driven via setDiffLinesEffect) ──
+      diffLineHighlightPlugin,
+
       // ── Line wrapping ──
       EditorView.lineWrapping,
 
@@ -880,6 +930,26 @@ export function JsonCodeEditor({
     };
   }, [searchTerm, currentMatchIndex, value]);
 
+  // Sync diff-line highlights (Compare page). Uses the same rAF retry in
+  // case the underlying CodeMirror view hasn't mounted yet.
+  useEffect(() => {
+    if (!diffLines) return;
+    let cancelled = false;
+    const dispatch = () => {
+      if (cancelled) return;
+      const view = editorRef.current?.view;
+      if (!view) {
+        requestAnimationFrame(dispatch);
+        return;
+      }
+      view.dispatch({ effects: setDiffLinesEffect.of(diffLines) });
+    };
+    dispatch();
+    return () => {
+      cancelled = true;
+    };
+  }, [diffLines, value]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "f") {
       e.preventDefault();
@@ -904,6 +974,7 @@ export function JsonCodeEditor({
           ref={editorRef}
           value={value}
           onChange={handleChange}
+          onCreateEditor={(view) => onViewReady?.(view)}
           extensions={extensions}
           placeholder="Paste or type your JSON here..."
           basicSetup={false}

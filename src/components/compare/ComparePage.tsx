@@ -188,7 +188,6 @@ export function ComparePage() {
         >
           <div className="flex items-center gap-1">
             <TextBtn onClick={loadSample} label="Sample" />
-            <TextBtn onClick={swap} label="Swap" disabled={!leftText && !rightText} />
           </div>
 
           <Divider />
@@ -249,6 +248,7 @@ export function ComparePage() {
             }}
             onLeftChange={setLeftText}
             onRightChange={setRightText}
+            onSwap={swap}
           />
 
           <div

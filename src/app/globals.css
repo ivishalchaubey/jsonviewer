@@ -259,6 +259,42 @@ textarea {
   border-radius: 2px;
 }
 
+/* Compare: line-level diff highlight inside the editor */
+.cm-editor .cm-diff-line {
+  background-color: rgba(88, 166, 255, 0.14);
+  box-shadow: inset 2px 0 0 0 var(--accent);
+}
+
+.dark .cm-editor .cm-diff-line {
+  background-color: rgba(88, 166, 255, 0.18);
+}
+
+/* Compare: centered mid-column action button (swap / lock) */
+.mid-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.1s ease;
+}
+
+.mid-btn:hover:not(:disabled) {
+  background-color: var(--surface-secondary);
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+}
+
+.mid-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.mid-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Swap icon: 180° flip driven by rotation state, linear easing */
+.swap-icon {
+  transition: transform 0.2s ease-out;
+}
+
 /* Autocomplete list animation */
 .cm-editor .cm-tooltip-autocomplete ul {
   animation: autocomplete-slide 0.12s ease;

@@ -111,6 +111,27 @@ export const IconCode = () => (
   </svg>
 );
 
+export const IconSwap = () => (
+  <svg {...iconProps}>
+    <path d="M7 3L3 7l4 4M3 7h14a4 4 0 0 1 4 4v1" />
+    <path d="M17 21l4-4-4-4M21 17H7a4 4 0 0 1-4-4v-1" />
+  </svg>
+);
+
+export const IconLock = () => (
+  <svg {...iconProps}>
+    <rect x="4.5" y="11" width="15" height="10" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+export const IconUnlock = () => (
+  <svg {...iconProps}>
+    <rect x="4.5" y="11" width="15" height="10" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+  </svg>
+);
+
 export const IconFontMinus = () => (
   <svg {...iconProps}>
     <path d="M4 17l5-12 5 12M6 13h6M16 15h5" />

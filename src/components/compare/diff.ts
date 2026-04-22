@@ -136,3 +136,67 @@ export function kindSymbol(kind: DiffKind): string {
   if (kind === "type") return "≠";
   return "~";
 }
+
+/**
+ * LCS-based line diff. Returns 0-based line indices that differ (absent from
+ * or misaligned with the other side). Used to paint per-line background
+ * decorations inside the Compare editors.
+ *
+ * O(n·m) time and space — capped to protect the UI thread on huge payloads.
+ */
+const LINE_DIFF_CAP = 2000;
+
+export function computeLineDiff(
+  leftText: string,
+  rightText: string,
+): { leftLines: Set<number>; rightLines: Set<number> } {
+  const leftLines = leftText.split("\n");
+  const rightLines = rightText.split("\n");
+  const empty = { leftLines: new Set<number>(), rightLines: new Set<number>() };
+
+  if (leftLines.length === 0 || rightLines.length === 0) return empty;
+  if (
+    leftLines.length > LINE_DIFF_CAP ||
+    rightLines.length > LINE_DIFF_CAP
+  ) {
+    return empty;
+  }
+
+  const n = leftLines.length;
+  const m = rightLines.length;
+
+  // LCS lengths.
+  const dp: Uint32Array[] = Array.from(
+    { length: n + 1 },
+    () => new Uint32Array(m + 1),
+  );
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] =
+        leftLines[i - 1] === rightLines[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  const leftHL = new Set<number>();
+  const rightHL = new Set<number>();
+  let i = n;
+  let j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && leftLines[i - 1] === rightLines[j - 1]) {
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      rightHL.add(j - 1);
+      j--;
+    } else if (i > 0) {
+      leftHL.add(i - 1);
+      i--;
+    } else {
+      break;
+    }
+  }
+
+  return { leftLines: leftHL, rightLines: rightHL };
+}
